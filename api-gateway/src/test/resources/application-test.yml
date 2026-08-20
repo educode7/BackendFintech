@@ -1,9 +1,5 @@
 spring:
-  config:
-    import: "optional:configserver:"
   cloud:
-    config:
-      enabled: false
     gateway:
       enabled: false
   data:
@@ -14,4 +10,3 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.ReactiveRedisAutoConfiguration
-      - org.springframework.cloud.config.client.ConfigClientAutoConfiguration

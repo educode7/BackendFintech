@@ -4,8 +4,16 @@ spring:
   profiles:
     active: default
   config:
-    import: "optional:configserver:"
+    import: "optional:configserver:http://localhost:8888"
   cloud:
+    config:
+      fail-fast: false
+      retry:
+        max-attempts: 5
+        initial-interval: 1000
+        max-interval: 5000
+        multiplier: 1.5
+      timeout: 5000
     gateway:
       discovery:
         locator:

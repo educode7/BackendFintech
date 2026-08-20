@@ -1,9 +1,4 @@
 spring:
-  config:
-    import: "optional:configserver:"
-  cloud:
-    config:
-      enabled: false
   datasource:
     url: jdbc:h2:mem:context_load;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
     username: sa
@@ -21,7 +16,6 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
-      - org.springframework.cloud.config.client.ConfigClientAutoConfiguration
 
 logging:
   level:
