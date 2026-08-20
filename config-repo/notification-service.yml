@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Notification Service — overrides shared config
+# ─────────────────────────────────────────────────────────────────────────
+spring:
+  application:
+    name: notification-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/notifications_db
+    username: wallet
+    password: change-me
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 3
+
+  kafka:
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
+      missing-topics-fatal: false
+
+server:
+  port: 8083
+
+wallet:
+  consumer-idempotency:
+    ttl-days: 7

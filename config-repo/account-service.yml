@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Account Service — overrides shared config
+# ─────────────────────────────────────────────────────────────────────────
+spring:
+  application:
+    name: account-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/accounts_db
+    username: wallet
+    password: change-me
+    hikari:
+      maximum-pool-size: 20
+
+  kafka:
+    consumer:
+      group-id: account-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        compression.type: snappy
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    listener:
+      ack-mode: record
+      missing-topics-fatal: false
+
+server:
+  port: 8082
+  shutdown: graceful
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      accountProducer:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50

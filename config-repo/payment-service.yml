@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Payment Service — overrides shared config
+# ─────────────────────────────────────────────────────────────────────────
+spring:
+  application:
+    name: payment-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payments_db
+    username: wallet
+    password: change-me
+    hikari:
+      maximum-pool-size: 20
+      validation-timeout: 3000
+
+  kafka:
+    producer:
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        compression.type: snappy
+        linger.ms: 20
+        delivery.timeout.ms: 30000
+        request.timeout.ms: 10000
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+server:
+  port: 8081
+  shutdown: graceful
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentProducer:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 3
+
+wallet:
+  idempotency:
+    ttl-hours: 24

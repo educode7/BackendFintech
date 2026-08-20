@@ -1,0 +1,25 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Account Service — Bootstrap Config
+# ─────────────────────────────────────────────────────────────────────────
+# This file is loaded BEFORE application.yml.
+# It tells the Spring Cloud Config Client where to find the Config Server.
+#
+# Resolution order:
+#   1. bootstrap.yml  (this file — config server location)
+#   2. Config Server serves: application.yml + account-service.yml + application-docker.yml
+#   3. Local application.yml overrides (if any remain)
+# ─────────────────────────────────────────────────────────────────────────
+spring:
+  application:
+    name: account-service
+  cloud:
+    config:
+      uri: http://localhost:8888
+      fail-fast: false
+      retry:
+        max-attempts: 5
+        initial-interval: 1000
+        max-interval: 5000
+        multiplier: 1.5
+      # Timeout for fetching config from the server
+      timeout: 5000

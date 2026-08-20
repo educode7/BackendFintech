@@ -1,0 +1,15 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Docker profile — overrides for containerized deployment
+# ─────────────────────────────────────────────────────────────────────────
+spring:
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+  kafka:
+    bootstrap-servers: kafka:9092
+
+  datasource:
+    username: wallet
+    password: change-me

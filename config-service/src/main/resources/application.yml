@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: config-service
+
+  profiles:
+    active: native
+
+  # ── Native profile: read from local filesystem ────────────────────────
+  # In production, switch to: spring.cloud.config.server.git.uri=...
+  # For now, we serve configs from the local config-repo/ directory.
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: file:../config-repo
+        # Encrypt keys for sensitive properties (production would use Vault)
+        # encrypt:
+        #   key: ${CONFIG_ENCRYPT_KEY:wallet-dev-key}
+
+server:
+  port: 8888
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,refresh,env,configprops
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    root: INFO
+    com.wallet.config: INFO
+    org.springframework.cloud.config: DEBUG

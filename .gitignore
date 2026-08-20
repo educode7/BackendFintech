@@ -1,0 +1,29 @@
+## Build artefacts
+target/
+*.jar
+*.war
+*.ear
+
+## IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+nbproject/
+nb-configuration.xml
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Maven local overrides
+.flattened-pom.xml
+
+## Logs / temp
+*.log
+logs/
+tmp/
