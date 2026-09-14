@@ -13,6 +13,8 @@ import com.wallet.account.domain.AccountViewRepository;
 import com.wallet.account.domain.EventStore;
 import com.wallet.shared.money.Money;
 
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -39,7 +41,8 @@ public class AccountCommandService {
     /**
      * Open a new account.
      */
-    public Uni<AccountResponse> openAccount(AccountCommand.OpenAccount command) {
+    @WithSpan("open-account")
+    public Uni<AccountResponse> openAccount(@SpanAttribute("account.user_id") AccountCommand.OpenAccount command) {
         String accountId = com.wallet.shared.util.IdGenerator.newId();
 
         // 1. Create aggregate
@@ -63,7 +66,8 @@ public class AccountCommandService {
     /**
      * Deposit funds into an account.
      */
-    public Uni<AccountResponse> deposit(AccountCommand.Deposit command) {
+    @WithSpan("deposit")
+    public Uni<AccountResponse> deposit(@SpanAttribute("account.id") AccountCommand.Deposit command) {
         return loadAggregate(command.accountId())
                 .onItem().transformToUni(account -> {
                     Money amount = new Money(command.amount(), command.currency());
@@ -90,7 +94,8 @@ public class AccountCommandService {
     /**
      * Withdraw funds from an account.
      */
-    public Uni<AccountResponse> withdraw(AccountCommand.Withdraw command) {
+    @WithSpan("withdraw")
+    public Uni<AccountResponse> withdraw(@SpanAttribute("account.id") AccountCommand.Withdraw command) {
         return loadAggregate(command.accountId())
                 .onItem().transformToUni(account -> {
                     Money amount = new Money(command.amount(), command.currency());

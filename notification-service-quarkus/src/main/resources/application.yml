@@ -54,6 +54,9 @@ quarkus:
     enabled: true
     service:
       name: notification-service
+    exporter:
+      otlp:
+        endpoint: http://localhost:4317
 
   smallrye-health:
     enabled: true

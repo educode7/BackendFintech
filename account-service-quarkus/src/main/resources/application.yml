@@ -67,6 +67,9 @@ quarkus:
     enabled: true
     service:
       name: account-service
+    exporter:
+      otlp:
+        endpoint: http://localhost:4317
 
   micrometer:
     export:

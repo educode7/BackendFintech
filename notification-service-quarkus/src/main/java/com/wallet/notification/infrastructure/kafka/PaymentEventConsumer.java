@@ -15,6 +15,8 @@ import com.wallet.shared.event.PaymentCompletedEvent;
 import com.wallet.shared.money.Money;
 import com.wallet.shared.util.JsonUtil;
 
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.redis.client.RedisAPI;
@@ -46,7 +48,8 @@ public class PaymentEventConsumer {
     }
 
     @Incoming("payment-events-in")
-    public Uni<Void> onPaymentCompleted(Message<String> message) {
+    @WithSpan("consume-payment-event")
+    public Uni<Void> onPaymentCompleted(@SpanAttribute("event.id") Message<String> message) {
         try {
             JsonObject json = new JsonObject(message.getPayload());
             String eventId = json.getString("eventId");

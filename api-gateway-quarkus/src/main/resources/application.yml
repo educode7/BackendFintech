@@ -28,6 +28,9 @@ quarkus:
     enabled: true
     service:
       name: api-gateway
+    exporter:
+      otlp:
+        endpoint: http://localhost:4317
 
   micrometer:
     export:

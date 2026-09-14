@@ -16,6 +16,8 @@ import com.wallet.payment.domain.Payment;
 import com.wallet.payment.domain.PaymentRepository;
 import com.wallet.shared.money.Money;
 
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -95,7 +97,10 @@ public class ProcessPaymentUseCase {
      * The outbox poller will publish the event to Kafka asynchronously.
      */
     @Transactional
-    public Uni<PaymentResponse> processPayment(ProcessPaymentCommand command, String correlationId) {
+    @WithSpan("process-payment")
+    public Uni<PaymentResponse> processPayment(
+            @SpanAttribute("payment.idempotency_key") ProcessPaymentCommand command,
+            @SpanAttribute("correlation.id") String correlationId) {
         // 2. Create domain entity
         String paymentId = com.wallet.shared.util.IdGenerator.newId();
         Payment payment = Payment.create(paymentId, command.userId(), command.amount(), command.idempotencyKey());
