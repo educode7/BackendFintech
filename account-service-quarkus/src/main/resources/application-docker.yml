@@ -19,7 +19,3 @@
       exporter:
         otlp:
           endpoint: http://otel-collector:4317
-
-  wallet:
-    idempotency:
-      ttl-hours: 24

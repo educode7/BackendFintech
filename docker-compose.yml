@@ -48,7 +48,6 @@ services:
       - "9092:9092"
       - "29092:29092"
     environment:
-      # KRaft mode
       KAFKA_CFG_NODE_ID: "0"
       KAFKA_CFG_PROCESS_ROLES: "controller,broker"
       KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "0@kafka:9093"
@@ -57,7 +56,6 @@ services:
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
       KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
       KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
-      # Auto-create topics so we don't need to pre-provision.
       KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_KRAFT_CLUSTER_ID: "wallet-cluster-0001"
       ALLOW_PLAINTEXT_LISTENER: "yes"
@@ -114,7 +112,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start-period: 15s
+      start_period: 15s
     networks:
       - wallet-net
     restart: unless-stopped
@@ -129,10 +127,10 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     depends_on:
-      - api-gateway
-      - payment-service
-      - account-service
-      - notification-service
+      - api-gateway-quarkus
+      - payment-service-quarkus
+      - account-service-quarkus
+      - notification-service-quarkus
     networks:
       - wallet-net
     restart: unless-stopped
@@ -155,17 +153,17 @@ services:
       - wallet-net
     restart: unless-stopped
 
-  # ─────────────────────────────── Application services ───────────────────────────────
-  api-gateway:
+  # ─────────────────────────────── Application services (Quarkus) ───────────────────────────────
+  api-gateway-quarkus:
     build:
       context: .
-      dockerfile: api-gateway/Dockerfile
+      dockerfile: api-gateway-quarkus/Dockerfile
     container_name: wallet-api-gateway
     ports:
       - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_URI: "http://config-service:8888"
+      QUARKUS_PROFILE: docker
+      QUARKUS_CONFIG_LOCATIONS: "optional:classpath:/application.yml,optional:classpath:/application-docker.yml"
     depends_on:
       config-service:
         condition: service_healthy
@@ -181,16 +179,17 @@ services:
       - wallet-net
     restart: unless-stopped
 
-  payment-service:
+  payment-service-quarkus:
     build:
       context: .
-      dockerfile: payment-service/Dockerfile
+      dockerfile: payment-service-quarkus/Dockerfile
     container_name: wallet-payment-service
     ports:
       - "8081:8081"
+      - "9081:9081"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_URI: "http://config-service:8888"
+      QUARKUS_PROFILE: docker
+      QUARKUS_CONFIG_LOCATIONS: "optional:classpath:/application.yml,optional:classpath:/application-docker.yml"
     depends_on:
       config-service:
         condition: service_healthy
@@ -200,22 +199,21 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      keycloak:
-        condition: service_healthy
     networks:
       - wallet-net
     restart: unless-stopped
 
-  account-service:
+  account-service-quarkus:
     build:
       context: .
-      dockerfile: account-service/Dockerfile
+      dockerfile: account-service-quarkus/Dockerfile
     container_name: wallet-account-service
     ports:
       - "8082:8082"
+      - "9082:9082"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_URI: "http://config-service:8888"
+      QUARKUS_PROFILE: docker
+      QUARKUS_CONFIG_LOCATIONS: "optional:classpath:/application.yml,optional:classpath:/application-docker.yml"
     depends_on:
       config-service:
         condition: service_healthy
@@ -225,22 +223,20 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      keycloak:
-        condition: service_healthy
     networks:
       - wallet-net
     restart: unless-stopped
 
-  notification-service:
+  notification-service-quarkus:
     build:
       context: .
-      dockerfile: notification-service/Dockerfile
+      dockerfile: notification-service-quarkus/Dockerfile
     container_name: wallet-notification-service
     ports:
       - "8083:8083"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_URI: "http://config-service:8888"
+      QUARKUS_PROFILE: docker
+      QUARKUS_CONFIG_LOCATIONS: "optional:classpath:/application.yml,optional:classpath:/application-docker.yml"
     depends_on:
       config-service:
         condition: service_healthy
@@ -249,8 +245,6 @@ services:
       redis:
         condition: service_healthy
       kafka:
-        condition: service_healthy
-      keycloak:
         condition: service_healthy
     networks:
       - wallet-net
