@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package wallet.payment.v1;
+
+option java_package = "com.wallet.payment.proto";
+option java_multiple_files = true;
+option java_outer_classname = "PaymentProto";
+
+import "google/protobuf/timestamp.proto";
+
+// ============================================================================
+// Payment Service — gRPC contract for inter-service communication
+// ============================================================================
+
+service PaymentService {
+  // Process a new payment. Idempotent via request_id.
+  rpc ProcessPayment(ProcessPaymentRequest) returns (ProcessPaymentResponse);
+
+  // Retrieve a payment by ID.
+  rpc GetPayment(GetPaymentRequest) returns (GetPaymentResponse);
+
+  // Stream payment status updates (for async monitoring).
+  rpc WatchPaymentStatus(WatchPaymentRequest) returns (stream PaymentStatusEvent);
+}
+
+// ----------------------------------------------------------------------------
+// Messages
+// ----------------------------------------------------------------------------
+
+message Money {
+  string amount = 1;   // Decimal string, e.g. "25.50"
+  string currency = 2; // ISO-4217, e.g. "USD"
+}
+
+message ProcessPaymentRequest {
+  string request_id = 1;   // MANDATORY — idempotency key (UUIDv7 recommended)
+  string user_id = 2;      // Owner of the payment
+  Money amount = 3;        // Payment amount
+}
+
+message ProcessPaymentResponse {
+  string payment_id = 1;
+  string user_id = 2;
+  Money amount = 3;
+  PaymentStatus status = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message GetPaymentRequest {
+  string payment_id = 1;
+}
+
+message GetPaymentResponse {
+  string payment_id = 1;
+  string user_id = 2;
+  Money amount = 3;
+  PaymentStatus status = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message WatchPaymentRequest {
+  string payment_id = 1;
+}
+
+message PaymentStatusEvent {
+  string payment_id = 1;
+  PaymentStatus status = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  string correlation_id = 4;
+}
+
+// ----------------------------------------------------------------------------
+// Enums
+// ----------------------------------------------------------------------------
+
+enum PaymentStatus {
+  PAYMENT_STATUS_UNSPECIFIED = 0;
+  PAYMENT_STATUS_PENDING = 1;
+  PAYMENT_STATUS_PROCESSING = 2;
+  PAYMENT_STATUS_COMPLETED = 3;
+  PAYMENT_STATUS_FAILED = 4;
+}

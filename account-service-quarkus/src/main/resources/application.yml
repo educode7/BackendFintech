@@ -1,0 +1,92 @@
+quarkus:
+  application:
+    name: account-service
+    version: 1.0.0
+
+  http:
+    port: 8082
+    host: 0.0.0.0
+
+  grpc:
+    port: 9082
+    host: 0.0.0.0
+
+  datasource:
+    db-kind: postgresql
+    username: postgres
+    password: postgres
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/accounts_db
+    reactive:
+      url: postgresql://localhost:5432/accounts_db
+
+  hibernate-orm:
+    database:
+      generation: none
+    validate-in-dev-mode: true
+
+  flyway:
+    migrate-at-start: true
+    schemas: public
+    locations: classpath:db/migration
+
+  redis:
+    host: localhost
+    port: 6379
+
+  kafka:
+    health:
+      enabled: true
+
+  mp:
+    messaging:
+      incoming:
+        payment-events-in:
+          connector: smallrye-kafka
+          topic: payment.events
+          value.deserializer: io.quarkus.kafka.client.serialization.JsonDeserializer
+          group: account-service
+          auto:
+            offset: earliest
+      outgoing:
+        account-events-out:
+          connector: smallrye-kafka
+          topic: account.events
+          value.serializer: io.quarkus.kafka.client.serialization.JsonbSerializer
+          acks: all
+
+  oidc:
+    auth-server-url: http://localhost:8180/realms/wallet
+    client-id: wallet-backend
+    enabled: true
+    application-type: service
+    credentials:
+      secret: secret
+
+  opentelemetry:
+    enabled: true
+    service:
+      name: account-service
+
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+
+  smallrye-health:
+    enabled: true
+    expose:
+      enabled: true
+
+  smallrye-openapi:
+    info:
+      title: Account Service API
+      description: Event-sourced Account aggregate with CQRS
+      version: "1.0.0"
+
+  log:
+    console:
+      enable: true
+    level: INFO
+    category:
+      "com.wallet.account": INFO

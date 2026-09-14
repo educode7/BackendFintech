@@ -1,0 +1,12 @@
+# Stage 1: Build
+FROM quarkus/quarkus-maven-plugin:3.17.0 AS build
+COPY . /project
+WORKDIR /project
+RUN ./mvnw clean package -Pnative -DskipTests
+
+# Stage 2: Runtime
+FROM scratch
+COPY --from=build /project/target/*-runner /notification-service
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+EXPOSE 8083
+ENTRYPOINT ["/notification-service", "-Dquarkus.http.host=0.0.0.0"]

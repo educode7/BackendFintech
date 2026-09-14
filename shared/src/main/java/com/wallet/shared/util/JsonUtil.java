@@ -1,8 +1,10 @@
 package com.wallet.shared.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
  * Single ObjectMapper configuration shared by every service.
@@ -11,21 +13,21 @@ import tools.jackson.databind.json.JsonMapper;
  *
  * Choices:
  * - ISO-8601 dates (not numeric timestamps): readable in logs and Kafka payloads.
- * - java.time.Instant/LocalDateTime work out of the box (Jackson 3 built-in).
+ * - java.time.Instant/LocalDateTime work out of the box (JavaTimeModule).
  * - FAIL_ON_UNKNOWN_PROPERTIES=false: forward-compatible consumers.
  * - camelCase: simplest convention; consumers in the same repo can rely on it.
  */
 public final class JsonUtil {
 
-    private static final JsonMapper MAPPER = JsonMapper.builder()
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
+        .addModule(new JavaTimeModule())
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .changeDefaultPropertyInclusion(prev -> prev.withOverrides(
-            JsonInclude.Value.construct(JsonInclude.Include.USE_DEFAULTS, JsonInclude.Include.NON_NULL)))
+        .serializationInclusion(JsonInclude.Include.NON_NULL)
         .build();
 
     private JsonUtil() { }
 
-    public static JsonMapper mapper() {
+    public static ObjectMapper mapper() {
         return MAPPER;
     }
 

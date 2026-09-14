@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package wallet.account.v1;
+
+option java_package = "com.wallet.account.proto";
+option java_multiple_files = true;
+option java_outer_classname = "AccountProto";
+
+import "google/protobuf/timestamp.proto";
+
+// ============================================================================
+// Account Service — gRPC contract for inter-service communication
+// ============================================================================
+
+service AccountService {
+  // Open a new account with initial balance.
+  rpc OpenAccount(OpenAccountRequest) returns (OpenAccountResponse);
+
+  // Get account by ID.
+  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse);
+
+  // Deposit funds into an account.
+  rpc Deposit(DepositRequest) returns (DepositResponse);
+
+  // Withdraw funds from an account.
+  rpc Withdraw(WithdrawRequest) returns (WithdrawResponse);
+}
+
+// ----------------------------------------------------------------------------
+// Messages
+// ----------------------------------------------------------------------------
+
+message Money {
+  string amount = 1;   // Decimal string, e.g. "100.00"
+  string currency = 2; // ISO-4217, e.g. "USD"
+}
+
+message OpenAccountRequest {
+  string request_id = 1;   // MANDATORY — idempotency key (UUIDv7 recommended)
+  string user_id = 2;      // Owner of the account
+  Money initial_balance = 3;
+}
+
+message OpenAccountResponse {
+  string account_id = 1;
+  string user_id = 2;
+  Money balance = 3;
+  AccountStatus status = 4;
+  int64 version = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message GetAccountRequest {
+  string account_id = 1;
+}
+
+message GetAccountResponse {
+  string account_id = 1;
+  string user_id = 2;
+  Money balance = 3;
+  AccountStatus status = 4;
+  int64 version = 5;
+  google.protobuf.Timestamp last_updated = 6;
+}
+
+message DepositRequest {
+  string request_id = 1;   // MANDATORY — idempotency key
+  string account_id = 2;
+  Money amount = 3;
+}
+
+message DepositResponse {
+  string account_id = 1;
+  Money new_balance = 2;
+  AccountStatus status = 3;
+  int64 version = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message WithdrawRequest {
+  string request_id = 1;   // MANDATORY — idempotency key
+  string account_id = 2;
+  Money amount = 3;
+}
+
+message WithdrawResponse {
+  string account_id = 1;
+  Money new_balance = 2;
+  AccountStatus status = 3;
+  int64 version = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+// ----------------------------------------------------------------------------
+// Enums
+// ----------------------------------------------------------------------------
+
+enum AccountStatus {
+  ACCOUNT_STATUS_UNSPECIFIED = 0;
+  ACCOUNT_STATUS_OPEN = 1;
+  ACCOUNT_STATUS_CLOSED = 2;
+}

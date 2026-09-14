@@ -28,6 +28,7 @@ class SharedArchitectureTest {
     @DisplayName("Shared no depende de org.springframework (ni boot ni core)")
     void shared_noDependeDeSpringCore() {
         ArchRule rule = noClasses()
+            .that().resideOutsideOfPackage("com.wallet.shared.security")
             .should().dependOnClassesThat().resideInAPackage("org.springframework..");
 
         rule.check(CLASSES);

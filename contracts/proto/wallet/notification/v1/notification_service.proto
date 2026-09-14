@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package wallet.notification.v1;
+
+option java_package = "com.wallet.notification.proto";
+option java_multiple_files = true;
+option java_outer_classname = "NotificationProto";
+
+import "google/protobuf/timestamp.proto";
+
+// ============================================================================
+// Notification Service — gRPC contract for inter-service communication
+// ============================================================================
+
+service NotificationService {
+  // List notifications for a user (paginated).
+  rpc ListNotifications(ListNotificationsRequest) returns (ListNotificationsResponse);
+}
+
+// ----------------------------------------------------------------------------
+// Messages
+// ----------------------------------------------------------------------------
+
+message ListNotificationsRequest {
+  string user_id = 1;
+  int32 page = 2;   // Zero-based page index
+  int32 size = 3;   // Page size (max 100)
+}
+
+message ListNotificationsResponse {
+  repeated Notification items = 1;
+  int64 total = 2;
+  int32 page = 3;
+  int32 size = 4;
+}
+
+message Notification {
+  string id = 1;
+  string user_id = 2;
+  NotificationType type = 3;
+  string subject = 4;
+  string body = 5;
+  NotificationStatus status = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp sent_at = 8;
+}
+
+// ----------------------------------------------------------------------------
+// Enums
+// ----------------------------------------------------------------------------
+
+enum NotificationType {
+  NOTIFICATION_TYPE_UNSPECIFIED = 0;
+  NOTIFICATION_TYPE_EMAIL = 1;
+  NOTIFICATION_TYPE_PUSH = 2;
+}
+
+enum NotificationStatus {
+  NOTIFICATION_STATUS_UNSPECIFIED = 0;
+  NOTIFICATION_STATUS_PENDING = 1;
+  NOTIFICATION_STATUS_SENT = 2;
+  NOTIFICATION_STATUS_FAILED = 3;
+}

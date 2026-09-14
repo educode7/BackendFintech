@@ -1,0 +1,18 @@
+# Stage 1: Build native binary
+FROM quarkus/quarkus-maven-plugin:3.17.0 AS build
+COPY . /project
+WORKDIR /project
+RUN ./mvnw clean package -Pnative -DskipTests
+
+# Stage 2: Minimal runtime image
+FROM scratch
+
+# Copy native binary
+COPY --from=build /project/target/*-runner /payment-service
+
+# Copy SSL certificates for outbound HTTPS (OIDC, external services)
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+EXPOSE 8081 9081
+
+ENTRYPOINT ["/payment-service", "-Dquarkus.http.host=0.0.0.0"]

@@ -6,6 +6,13 @@ spring:
     virtual:
       enabled: true
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/wallet
+          jwk-set-uri: http://localhost:8180/realms/wallet/protocol/openid-connect/certs
+
   data:
     redis:
       host: localhost

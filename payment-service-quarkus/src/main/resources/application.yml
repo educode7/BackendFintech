@@ -1,0 +1,149 @@
+quarkus:
+  application:
+    name: payment-service
+    version: 1.0.0
+
+  # ========================================
+  # HTTP / REST
+  # ========================================
+  http:
+    port: 8081
+    host: 0.0.0.0
+
+  # ========================================
+  # gRPC
+  # ========================================
+  grpc:
+    port: 9081
+    host: 0.0.0.0
+
+  # ========================================
+  # Reactive Persistence (Hibernate Reactive)
+  # ========================================
+  datasource:
+    db-kind: postgresql
+    username: postgres
+    password: postgres
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/payments_db
+    reactive:
+      url: postgresql://localhost:5432/payments_db
+
+  hibernate-orm:
+    database:
+      generation: none
+    validate-in-dev-mode: true
+
+  hibernate-reactive:
+    default-schema: public
+
+  # ========================================
+  # Flyway
+  # ========================================
+  flyway:
+    migrate-at-start: true
+    schemas: public
+    locations: classpath:db/migration
+
+  # ========================================
+  # Redis (idempotency store)
+  # ========================================
+  redis:
+    host: localhost
+    port: 6379
+
+  # ========================================
+  # Kafka (event publishing)
+  # ========================================
+  kafka:
+    health:
+      enabled: true
+
+  mp:
+    messaging:
+      outgoing:
+        payment-events-out:
+          connector: smallrye-kafka
+          topic: payment.events
+          value.serializer: io.quarkus.kafka.client.serialization.JsonbSerializer
+          acks: all
+          key.serializer: io.quarkus.kafka.client.serialization.StringSerializer
+          auto:
+            create: true
+
+  # ========================================
+  # Security (OIDC / Keycloak)
+  # ========================================
+  oidc:
+    auth-server-url: http://localhost:8180/realms/wallet
+    client-id: wallet-backend
+    enabled: true
+    application-type: service
+    credentials:
+      secret: secret
+
+  # ========================================
+  # Fault Tolerance
+  # ========================================
+  smallrye-fault-tolerance:
+    enabled: true
+
+  # ========================================
+  # OpenTelemetry / Tracing
+  # ========================================
+  opentelemetry:
+    enabled: true
+    service:
+      name: payment-service
+    exporter:
+      otlp:
+        endpoint: http://localhost:4317
+
+  # ========================================
+  # Micrometer / Metrics
+  # ========================================
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+
+  # ========================================
+  # Health Checks
+  # ========================================
+  smallrye-health:
+    enabled: true
+    expose:
+      enabled: true
+      path: /q/health
+    ui:
+      enabled: true
+      path: /q/health/ui
+
+  # ========================================
+  # OpenAPI / Swagger UI
+  # ========================================
+  smallrye-openapi:
+    info:
+      title: Payment Service API
+      description: Payment processing service for the Digital Wallet platform
+      version: "1.0.0"
+    path: /q/openapi
+
+  # ========================================
+  # Logging
+  # ========================================
+  log:
+    console:
+      enable: true
+      format: "%d{yyyy-MM-dd HH:mm:ss} [%p] [%t{...}] %s%e%n"
+    level: INFO
+    category:
+      "com.wallet.payment": INFO
+      "io.quarkus": INFO
+
+# ========================================
+# Custom Configuration
+# ========================================
+wallet:
+  idempotency:
+    ttl-hours: 24

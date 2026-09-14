@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package wallet.event.v1;
+
+option java_package = "com.wallet.event.proto";
+option java_multiple_files = true;
+option java_outer_classname = "EventProto";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// ============================================================================
+// Domain Event Schemas — Kafka message contracts
+//
+// These define the payload structure for events published to Kafka topics.
+// Each event wraps a typed payload with standard metadata.
+//
+// Topic mapping:
+//   payment.events     → PaymentEventEnvelope
+//   account.events     → AccountEventEnvelope
+//   notification.events → NotificationEventEnvelope
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// Event envelope — wraps all domain events with standard metadata
+// ----------------------------------------------------------------------------
+
+message EventEnvelope {
+  string event_id = 1;          // Unique event ID (UUIDv7)
+  string event_type = 2;        // Discriminator, e.g. "PaymentCompleted"
+  string aggregate_id = 3;      // Aggregate root ID
+  string aggregate_type = 4;    // e.g. "Payment", "Account"
+  int32 version = 5;            // Schema version (for evolution)
+  google.protobuf.Timestamp occurred_at = 6;
+  string correlation_id = 7;    // W3C traceparent or X-Correlation-Id
+  string causation_id = 8;      // ID of the command/event that caused this
+
+  // W3C Trace Context — propagated for distributed tracing
+  string trace_parent = 9;      // traceparent header value
+  string trace_state = 10;      // tracestate header value
+
+  // Typed payload — one of the following:
+  oneof payload {
+    PaymentCompletedEvent payment_completed = 20;
+    AccountOpenedEvent account_opened = 21;
+    MoneyDepositedEvent money_deposited = 22;
+    MoneyWithdrawnEvent money_withdrawn = 23;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Money value object (shared)
+// ----------------------------------------------------------------------------
+
+message MoneyValue {
+  string amount = 1;   // Decimal string, e.g. "25.50"
+  string currency = 2; // ISO-4217, e.g. "USD"
+}
+
+// ----------------------------------------------------------------------------
+// Payment Events
+// ----------------------------------------------------------------------------
+
+message PaymentCompletedEvent {
+  string payment_id = 1;
+  string user_id = 2;
+  MoneyValue amount = 3;
+  string status = 4;           // "COMPLETED" or "FAILED"
+}
+
+// ----------------------------------------------------------------------------
+// Account Events
+// ----------------------------------------------------------------------------
+
+message AccountOpenedEvent {
+  string account_id = 1;
+  string user_id = 2;
+  MoneyValue initial_balance = 3;
+}
+
+message MoneyDepositedEvent {
+  string account_id = 1;
+  MoneyValue amount = 2;
+  MoneyValue new_balance = 3;
+}
+
+message MoneyWithdrawnEvent {
+  string account_id = 1;
+  MoneyValue amount = 2;
+  MoneyValue new_balance = 3;
+}

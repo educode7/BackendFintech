@@ -1,0 +1,59 @@
+quarkus:
+  application:
+    name: api-gateway
+    version: 1.0.0
+
+  http:
+    port: 8080
+    host: 0.0.0.0
+
+  redis:
+    host: localhost
+    port: 6379
+
+  oidc:
+    auth-server-url: http://localhost:8180/realms/wallet
+    client-id: wallet-backend
+    enabled: true
+    application-type: service
+    credentials:
+      secret: secret
+
+  smallrye-health:
+    enabled: true
+    expose:
+      enabled: true
+
+  opentelemetry:
+    enabled: true
+    service:
+      name: api-gateway
+
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+
+  log:
+    console:
+      enable: true
+    level: INFO
+    category:
+      "com.wallet.gateway": INFO
+
+# Custom routing config
+wallet:
+  gateway:
+    routes:
+      payment-service:
+        url: http://localhost:8081
+        path: /api/v1/payments
+      account-service:
+        url: http://localhost:8082
+        path: /api/v1/accounts
+      notification-service:
+        url: http://localhost:8083
+        path: /api/v1/notifications
+    rate-limit:
+      replenish-rate: 100
+      burst-capacity: 200

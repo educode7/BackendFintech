@@ -1,0 +1,12 @@
+# Stage 1: Build native binary
+FROM quarkus/quarkus-maven-plugin:3.17.0 AS build
+COPY . /project
+WORKDIR /project
+RUN ./mvnw clean package -Pnative -DskipTests
+
+# Stage 2: Minimal runtime image
+FROM scratch
+COPY --from=build /project/target/*-runner /account-service
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+EXPOSE 8082 9082
+ENTRYPOINT ["/account-service", "-Dquarkus.http.host=0.0.0.0"]

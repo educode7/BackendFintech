@@ -1,0 +1,415 @@
+openapi: "3.1.0"
+info:
+  title: Account Service API
+  description: |
+    Account management service for the Digital Wallet platform.
+    Supports event-sourced accounts with CQRS read model.
+
+    ## Event Sourcing
+    Account state is derived from an immutable event stream. The read model
+    (AccountView) is eventually consistent with the event store.
+
+    ## Error Format
+    All errors follow RFC 9457 `application/problem+json`.
+  version: "1.0.0"
+  contact:
+    name: Wallet Platform Team
+  license:
+    name: Proprietary
+
+servers:
+  - url: /api/v1
+    description: Versioned base path
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Accounts
+    description: Account lifecycle and balance operations
+
+paths:
+  /accounts:
+    post:
+      operationId: openAccount
+      summary: Open a new account
+      description: |
+        Creates a new account with an initial balance.
+        The `AccountOpenedEvent` is appended to the event store.
+      tags: [Accounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenAccountRequest"
+            examples:
+              basic:
+                summary: Open account with initial deposit
+                value:
+                  userId: "user-01H5GQK7..."
+                  initialBalance:
+                    amount: 100.00
+                    currency: USD
+      responses:
+        "201":
+          description: Account created
+          headers:
+            Location:
+              description: URI of the created account
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountView"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /accounts/{accountId}:
+    get:
+      operationId: getAccount
+      summary: Get account by ID
+      tags: [Accounts]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Account ID (UUID)
+      responses:
+        "200":
+          description: Account found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountView"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /accounts/{accountId}/deposits:
+    post:
+      operationId: depositToAccount
+      summary: Deposit funds into an account
+      description: |
+        Adds funds to the specified account.
+        Appends `MoneyDepositedEvent` to the event store.
+        The read model is updated asynchronously.
+      tags: [Accounts]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Account ID (UUID)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositRequest"
+            examples:
+              basic:
+                summary: Deposit 50 USD
+                value:
+                  amount: 50.00
+                  currency: USD
+      responses:
+        "200":
+          description: Deposit processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountView"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/ConcurrentModification"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /accounts/{accountId}/withdrawals:
+    post:
+      operationId: withdrawFromAccount
+      summary: Withdraw funds from an account
+      description: |
+        Removes funds from the specified account.
+        Fails if balance is insufficient.
+        Appends `MoneyWithdrawnEvent` to the event store.
+      tags: [Accounts]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Account ID (UUID)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawRequest"
+            examples:
+              basic:
+                summary: Withdraw 25 USD
+                value:
+                  amount: 25.00
+                  currency: USD
+      responses:
+        "200":
+          description: Withdrawal processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountView"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/InsufficientFunds"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT issued by Keycloak (RS256)
+
+  schemas:
+    Money:
+      type: object
+      description: Monetary value with ISO-4217 currency
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.0001
+          example: 100.00
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: USD
+
+    OpenAccountRequest:
+      type: object
+      description: Request to open a new account
+      required: [userId, initialBalance]
+      properties:
+        userId:
+          type: string
+          maxLength: 64
+          description: Owner of the account
+          example: "user-01H5GQK7..."
+        initialBalance:
+          $ref: "#/components/schemas/Money"
+
+    DepositRequest:
+      type: object
+      description: Deposit funds
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.0001
+          description: Amount to deposit
+          example: 50.00
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          description: ISO-4217 currency code
+          example: USD
+
+    WithdrawRequest:
+      type: object
+      description: Withdraw funds
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.0001
+          description: Amount to withdraw
+          example: 25.00
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          description: ISO-4217 currency code
+          example: USD
+
+    AccountView:
+      type: object
+      description: Account read model (CQRS projection)
+      properties:
+        accountId:
+          type: string
+          format: uuid
+          description: Account ID
+          example: "01H5GQK7ABC123"
+        userId:
+          type: string
+          description: Account owner
+          example: "user-01H5GQK7..."
+        balanceAmount:
+          type: number
+          format: decimal
+          description: Current balance
+          example: 150.00
+        balanceCurrency:
+          type: string
+          description: Balance currency
+          example: USD
+        status:
+          type: string
+          enum: [OPEN, CLOSED]
+          description: Account status
+        version:
+          type: integer
+          format: int64
+          description: Event stream version (for optimistic concurrency)
+          example: 3
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Last projection update (UTC)
+
+    ErrorResponse:
+      type: object
+      description: RFC 9457 Problem Details
+      required: [type, title, status, detail]
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "urn:wallet:account:ACCOUNT_NOT_FOUND"
+        title:
+          type: string
+          example: "Account Not Found"
+        status:
+          type: integer
+          example: 404
+        detail:
+          type: string
+          example: "No account found with the given ID"
+        instance:
+          type: string
+          format: uri
+        code:
+          type: string
+          example: "ACCOUNT_NOT_FOUND"
+        correlationId:
+          type: string
+          example: "01H5GQK7XYZ789"
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    NotFound:
+      description: Account not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            type: "urn:wallet:account:ACCOUNT_NOT_FOUND"
+            title: "Account Not Found"
+            status: 404
+            detail: "No account found with the given ID"
+            code: "ACCOUNT_NOT_FOUND"
+
+    ConcurrentModification:
+      description: Optimistic locking conflict (version mismatch)
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            type: "urn:wallet:account:CONCURRENT_MODIFICATION"
+            title: "Concurrent Modification"
+            status: 409
+            detail: "Account was modified by another request. Please retry."
+            code: "CONCURRENT_MODIFICATION"
+
+    InsufficientFunds:
+      description: Withdrawal exceeds available balance
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            type: "urn:wallet:account:INSUFFICIENT_FUNDS"
+            title: "Insufficient Funds"
+            status: 409
+            detail: "Available balance is 50.00 USD, requested 100.00 USD"
+            code: "INSUFFICIENT_FUNDS"
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

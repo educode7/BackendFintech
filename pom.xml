@@ -9,15 +9,15 @@
     <version>1.0.0</version>
     <packaging>pom</packaging>
     <name>Wallet Backend</name>
-    <description>Multi-module digital wallet backend (Java 25 + Spring Boot 4.1 + Kafka)</description>
+    <description>Multi-module digital wallet backend (Quarkus 3.17 + GraalVM native)</description>
 
     <modules>
         <module>shared</module>
         <module>config-service</module>
-        <module>api-gateway</module>
-        <module>payment-service</module>
-        <module>account-service</module>
-        <module>notification-service</module>
+        <module>api-gateway-quarkus</module>
+        <module>payment-service-quarkus</module>
+        <module>account-service-quarkus</module>
+        <module>notification-service-quarkus</module>
     </modules>
 
     <properties>
@@ -28,13 +28,8 @@
 
         <spring-boot.version>4.1.0</spring-boot.version>
         <spring-cloud.version>2025.1.2</spring-cloud.version>
-        <resilience4j.version>2.4.0</resilience4j.version>
         <postgresql.version>42.7.11</postgresql.version>
-
         <archunit.version>1.5.0</archunit.version>
-
-        <!-- Jackson 3.x (tools.jackson.*) is the default in Spring Boot 4.1.
-             No BOM override needed — managed by spring-boot-dependencies. -->
     </properties>
 
     <dependencyManagement>
@@ -54,37 +49,20 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>io.github.resilience4j</groupId>
-                <artifactId>resilience4j-bom</artifactId>
-                <version>${resilience4j.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <!-- resilience4j-bom 2.4.0 doesn't manage the spring-boot4 starter
-                 (only spring-boot3); pin it explicitly. -->
-            <dependency>
-                <groupId>io.github.resilience4j</groupId>
-                <artifactId>resilience4j-spring-boot4</artifactId>
-                <version>${resilience4j.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${postgresql.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.wallet</groupId>
                 <artifactId>shared</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.wallet</groupId>
                 <artifactId>config-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.tngtech.archunit</groupId>
                 <artifactId>archunit-junit5</artifactId>
@@ -154,10 +132,6 @@
                         </exclude>
                     </excludes>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
             </plugin>
             </plugins>
         </pluginManagement>
