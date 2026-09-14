@@ -140,6 +140,14 @@
         </dependency>
 
         <!-- ======================================== -->
+        <!-- Scheduler (outbox poller)                -->
+        <!-- ======================================== -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
+
+        <!-- ======================================== -->
         <!-- Validation                               -->
         <!-- ======================================== -->
         <dependency>

@@ -4,12 +4,14 @@ import java.util.Optional;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.transaction.Transactional;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import com.wallet.payment.domain.EventPublisher;
 import com.wallet.payment.domain.IdempotencyStore;
+import com.wallet.payment.domain.OutboxEvent;
+import com.wallet.payment.domain.OutboxRepository;
 import com.wallet.payment.domain.Payment;
 import com.wallet.payment.domain.PaymentRepository;
 import com.wallet.shared.money.Money;
@@ -19,9 +21,9 @@ import io.smallrye.mutiny.Uni;
 /**
  * Use case: process a payment.
  * <p>
- * Orchestrates: idempotency check → create payment → persist → publish event.
- * Completely framework-free at the domain boundary — all infrastructure
- * is injected via ports (interfaces).
+ * Orchestrates: idempotency check → create payment → persist + outbox in same TX.
+ * The outbox event is published to Kafka by a separate polling publisher,
+ * guaranteeing at-least-once delivery even if Kafka is temporarily down.
  */
 @Singleton
 public class ProcessPaymentUseCase {
@@ -30,7 +32,7 @@ public class ProcessPaymentUseCase {
 
     private final PaymentRepository paymentRepository;
     private final IdempotencyStore idempotencyStore;
-    private final EventPublisher eventPublisher;
+    private final OutboxRepository outboxRepository;
 
     @ConfigProperty(name = "wallet.idempotency.ttl-hours", defaultValue = "24")
     int idempotencyTtlHours;
@@ -38,10 +40,10 @@ public class ProcessPaymentUseCase {
     @Inject
     public ProcessPaymentUseCase(PaymentRepository paymentRepository,
                                  IdempotencyStore idempotencyStore,
-                                 EventPublisher eventPublisher) {
+                                 OutboxRepository outboxRepository) {
         this.paymentRepository = paymentRepository;
         this.idempotencyStore = idempotencyStore;
-        this.eventPublisher = eventPublisher;
+        this.outboxRepository = outboxRepository;
     }
 
     /**
@@ -87,12 +89,18 @@ public class ProcessPaymentUseCase {
         };
     }
 
-    private Uni<PaymentResponse> processPayment(ProcessPaymentCommand command, String correlationId) {
+    /**
+     * Process payment and write to outbox in the SAME transaction.
+     * If either payment save or outbox save fails, both are rolled back.
+     * The outbox poller will publish the event to Kafka asynchronously.
+     */
+    @Transactional
+    public Uni<PaymentResponse> processPayment(ProcessPaymentCommand command, String correlationId) {
         // 2. Create domain entity
         String paymentId = com.wallet.shared.util.IdGenerator.newId();
         Payment payment = Payment.create(paymentId, command.userId(), command.amount(), command.idempotencyKey());
 
-        // 3. Persist
+        // 3. Persist payment
         Payment saved = paymentRepository.save(payment);
         log.infof("Payment created: id=%s, userId=%s, amount=%s, key=%s",
                 saved.id(), saved.userId(), saved.amount(), saved.idempotencyKey());
@@ -102,13 +110,20 @@ public class ProcessPaymentUseCase {
         Payment completed = processing.complete();
         Payment finalPayment = paymentRepository.save(completed);
 
-        // 5. Publish event (async, fire-and-forget with error logging)
-        eventPublisher.publishPaymentCompleted(
+        // 5. Write to outbox (same transaction as payment)
+        String eventId = com.wallet.shared.util.IdGenerator.newId();
+        String eventType = "PaymentCompleted";
+        String payload = buildEventPayload(finalPayment, correlationId, eventId);
+
+        OutboxEvent outboxEvent = OutboxEvent.create(
+                eventType,
                 finalPayment.id(),
-                finalPayment.userId(),
-                finalPayment.amount(),
-                finalPayment.status().name(),
-                correlationId);
+                "Payment",
+                payload,
+                correlationId
+        );
+        outboxRepository.save(outboxEvent);
+        log.infof("Outbox event written: type=%s, paymentId=%s", eventType, finalPayment.id());
 
         // 6. Cache response for idempotency replay
         PaymentResponse response = PaymentResponse.from(finalPayment);
@@ -116,6 +131,23 @@ public class ProcessPaymentUseCase {
         idempotencyStore.complete(command.idempotencyKey(), responseJson, idempotencyTtlHours);
 
         return Uni.createFrom().item(response);
+    }
+
+    private String buildEventPayload(Payment payment, String correlationId, String eventId) {
+        return new io.vertx.core.json.JsonObject()
+                .put("eventId", eventId)
+                .put("eventType", "PaymentCompleted")
+                .put("aggregateId", payment.id())
+                .put("aggregateType", "Payment")
+                .put("correlationId", correlationId)
+                .put("payload", new io.vertx.core.json.JsonObject()
+                        .put("paymentId", payment.id())
+                        .put("userId", payment.userId())
+                        .put("amount", new io.vertx.core.json.JsonObject()
+                                .put("amount", payment.amount().amount().toPlainString())
+                                .put("currency", payment.amount().currency()))
+                        .put("status", payment.status().name()))
+                .encode();
     }
 
     private PaymentResponse deserializeResponse(String json) {

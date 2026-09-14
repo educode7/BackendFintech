@@ -15,8 +15,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.wallet.payment.domain.EventPublisher;
 import com.wallet.payment.domain.IdempotencyStore;
+import com.wallet.payment.domain.OutboxEvent;
+import com.wallet.payment.domain.OutboxRepository;
 import com.wallet.payment.domain.Payment;
 import com.wallet.payment.domain.PaymentRepository;
 import com.wallet.payment.domain.exception.DuplicatePaymentException;
@@ -31,13 +32,13 @@ class ProcessPaymentUseCaseTest {
 
     @Mock PaymentRepository paymentRepository;
     @Mock IdempotencyStore idempotencyStore;
-    @Mock EventPublisher eventPublisher;
+    @Mock OutboxRepository outboxRepository;
 
     ProcessPaymentUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new ProcessPaymentUseCase(paymentRepository, idempotencyStore, eventPublisher);
+        useCase = new ProcessPaymentUseCase(paymentRepository, idempotencyStore, outboxRepository);
         useCase.idempotencyTtlHours = 24;
     }
 
@@ -70,8 +71,7 @@ class ProcessPaymentUseCaseTest {
         assertEquals("COMPLETED", response.status());
 
         verify(paymentRepository, times(2)).save(any(Payment.class));
-        verify(eventPublisher).publishPaymentCompleted(anyString(), eq("user-001"), any(Money.class),
-                eq("COMPLETED"), eq("corr-001"));
+        verify(outboxRepository).save(any(OutboxEvent.class));
         verify(idempotencyStore).complete(eq("key-001"), anyString(), eq(24));
     }
 
@@ -100,8 +100,7 @@ class ProcessPaymentUseCaseTest {
         assertEquals("COMPLETED", response.status());
 
         verify(paymentRepository, never()).save(any());
-        verify(eventPublisher, never()).publishPaymentCompleted(anyString(), anyString(),
-                any(Money.class), anyString(), anyString());
+        verify(outboxRepository, never()).save(any());
     }
 
     @Test
@@ -122,7 +121,6 @@ class ProcessPaymentUseCaseTest {
         subscriber.assertFailedWith(DuplicatePaymentException.class);
 
         verify(paymentRepository, never()).save(any());
-        verify(eventPublisher, never()).publishPaymentCompleted(anyString(), anyString(),
-                any(Money.class), anyString(), anyString());
+        verify(outboxRepository, never()).save(any());
     }
 }

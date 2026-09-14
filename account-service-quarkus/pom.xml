@@ -69,6 +69,9 @@
         <!-- Health -->
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-health</artifactId></dependency>
 
+        <!-- Scheduler (outbox poller) -->
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-scheduler</artifactId></dependency>
+
         <!-- Validation -->
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-hibernate-validator</artifactId></dependency>
 

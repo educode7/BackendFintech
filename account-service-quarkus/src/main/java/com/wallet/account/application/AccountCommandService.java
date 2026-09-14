@@ -10,7 +10,6 @@ import org.jboss.logging.Logger;
 import com.wallet.account.domain.Account;
 import com.wallet.account.domain.AccountView;
 import com.wallet.account.domain.AccountViewRepository;
-import com.wallet.account.domain.EventPublisher;
 import com.wallet.account.domain.EventStore;
 import com.wallet.shared.money.Money;
 
@@ -19,7 +18,8 @@ import io.smallrye.mutiny.Uni;
 /**
  * Use case: account write side (CQRS command side).
  * <p>
- * Orchestrates: create account → append events → publish to Kafka → update projection.
+ * Orchestrates: create account → append events → update projection.
+ * Events are published to Kafka by the OutboxPoller (transactional outbox pattern).
  */
 @Singleton
 public class AccountCommandService {
@@ -28,15 +28,12 @@ public class AccountCommandService {
 
     private final EventStore eventStore;
     private final AccountViewRepository viewRepository;
-    private final EventPublisher eventPublisher;
 
     @Inject
     public AccountCommandService(EventStore eventStore,
-                                 AccountViewRepository viewRepository,
-                                 EventPublisher eventPublisher) {
+                                 AccountViewRepository viewRepository) {
         this.eventStore = eventStore;
         this.viewRepository = viewRepository;
-        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -48,7 +45,7 @@ public class AccountCommandService {
         // 1. Create aggregate
         Account account = Account.open(accountId, command.userId(), command.initialBalance());
 
-        // 2. Append events to store
+        // 2. Append events to store (outbox — published by OutboxPoller)
         eventStore.appendEvents(accountId, account.getPendingEvents(), 0);
 
         log.infof("Account opened: id=%s, userId=%s, balance=%s", accountId, command.userId(), command.initialBalance());
@@ -57,10 +54,7 @@ public class AccountCommandService {
         AccountView view = AccountView.fromDomain(account);
         viewRepository.save(view);
 
-        // 4. Publish events to Kafka
-        publishEvents(account, command.requestId());
-
-        // 5. Clear pending events after publishing
+        // 4. Clear pending events after persisting
         account.clearPendingEvents();
 
         return Uni.createFrom().item(AccountResponse.from(view));
@@ -77,7 +71,7 @@ public class AccountCommandService {
                     // 1. Apply business logic
                     account.deposit(amount);
 
-                    // 2. Append events
+                    // 2. Append events (outbox — published by OutboxPoller)
                     eventStore.appendEvents(command.accountId(), account.getPendingEvents(), account.version() - account.getPendingEvents().size());
 
                     log.infof("Deposit: accountId=%s, amount=%s", command.accountId(), amount);
@@ -86,10 +80,7 @@ public class AccountCommandService {
                     AccountView view = AccountView.fromDomain(account);
                     viewRepository.save(view);
 
-                    // 4. Publish events
-                    publishEvents(account, command.requestId());
-
-                    // 5. Clear pending events after publishing
+                    // 4. Clear pending events after persisting
                     account.clearPendingEvents();
 
                     return Uni.createFrom().item(AccountResponse.from(view));
@@ -107,7 +98,7 @@ public class AccountCommandService {
                     // 1. Apply business logic
                     account.withdraw(amount);
 
-                    // 2. Append events
+                    // 2. Append events (outbox — published by OutboxPoller)
                     eventStore.appendEvents(command.accountId(), account.getPendingEvents(), account.version() - account.getPendingEvents().size());
 
                     log.infof("Withdrawal: accountId=%s, amount=%s", command.accountId(), amount);
@@ -116,10 +107,7 @@ public class AccountCommandService {
                     AccountView view = AccountView.fromDomain(account);
                     viewRepository.save(view);
 
-                    // 4. Publish events
-                    publishEvents(account, command.requestId());
-
-                    // 5. Clear pending events after publishing
+                    // 4. Clear pending events after persisting
                     account.clearPendingEvents();
 
                     return Uni.createFrom().item(AccountResponse.from(view));
@@ -153,13 +141,5 @@ public class AccountCommandService {
         }
 
         return Uni.createFrom().item(account);
-    }
-
-    private void publishEvents(Account account, String correlationId) {
-        for (com.wallet.shared.event.AccountEvent event : account.getPendingEvents()) {
-            String eventType = event.getClass().getSimpleName();
-            String payload = com.wallet.shared.util.JsonUtil.toJson(event);
-            eventPublisher.publish(eventType, account.accountId(), payload, correlationId);
-        }
     }
 }

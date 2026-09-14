@@ -3,6 +3,7 @@ package com.wallet.account.infrastructure.persistence;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
@@ -15,14 +16,13 @@ import com.wallet.shared.event.AccountEvent;
 import com.wallet.shared.event.AccountOpenedEvent;
 import com.wallet.shared.event.MoneyDepositedEvent;
 import com.wallet.shared.event.MoneyWithdrawnEvent;
-import com.wallet.shared.event.EventMetadata;
-import com.wallet.shared.money.Money;
 
 /**
  * Infrastructure adapter: EventStore implementation using JPA.
  * <p>
  * Append-only — events are never updated or deleted.
  * Uses optimistic concurrency via UNIQUE(aggregate_id, version).
+ * The published flag enables the transactional outbox pattern.
  */
 @ApplicationScoped
 public class JpaEventStore implements EventStore {
@@ -79,6 +79,31 @@ public class JpaEventStore implements EventStore {
         return entities.stream()
                 .map(this::toDomainEvent)
                 .toList();
+    }
+
+    /**
+     * Find unpublished events for the outbox poller.
+     */
+    public List<EventStoreEntity> findUnpublished(int limit) {
+        return entityManager
+                .createQuery("SELECT e FROM EventStoreEntity e WHERE e.published = false ORDER BY e.createdAt ASC",
+                        EventStoreEntity.class)
+                .setMaxResults(limit)
+                .getResultList();
+    }
+
+    /**
+     * Mark events as published after successful Kafka send.
+     */
+    @Transactional
+    public void markPublished(List<UUID> eventIds) {
+        for (UUID id : eventIds) {
+            EventStoreEntity entity = entityManager.find(EventStoreEntity.class, id);
+            if (entity != null) {
+                entity.markPublished();
+            }
+        }
+        entityManager.flush();
     }
 
     private long getCurrentVersion(String aggregateId) {
