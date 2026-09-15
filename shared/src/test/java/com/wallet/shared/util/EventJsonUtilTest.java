@@ -32,7 +32,7 @@ class EventJsonUtilTest {
         @DisplayName("round-trip preserva todos los campos")
         void roundTrip() {
             PaymentCompletedEvent original = new PaymentCompletedEvent(
-                "pay-1", "user-1",
+                "pay-1", "acc-1", "user-1",
                 new Money(new BigDecimal("250.75"), "EUR"),
                 "COMPLETED", METADATA
             );
@@ -47,7 +47,7 @@ class EventJsonUtilTest {
         @DisplayName("JSON usa nombres camelCase")
         void camelCase() {
             PaymentCompletedEvent event = new PaymentCompletedEvent(
-                "pay-1", "user-1", new Money(new BigDecimal("10"), "USD"), "COMPLETED", METADATA
+                "pay-1", "acc-1", "user-1", new Money(new BigDecimal("10"), "USD"), "COMPLETED", METADATA
             );
 
             String json = JsonUtil.toJson(event);

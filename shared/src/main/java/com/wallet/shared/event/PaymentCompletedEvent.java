@@ -8,6 +8,7 @@ import com.wallet.shared.money.Money;
  */
 public record PaymentCompletedEvent(
     String paymentId,
+    String accountId,
     String userId,
     Money amount,
     String status,
