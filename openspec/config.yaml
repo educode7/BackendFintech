@@ -1,0 +1,37 @@
+# SDD Configuration — BackendFintech
+context: |
+  Multi-module digital wallet backend (Quarkus 3.17.0 + GraalVM native).
+  4 Quarkus services: account, payment, notification, api-gateway.
+  Architecture: DDD + CQRS + Event Sourcing (account), Transactional Outbox (payment).
+  Stack: Java 21/25, PostgreSQL, Redis, Kafka, Keycloak OIDC, gRPC, REST, OpenAPI.
+  Observability: OpenTelemetry + Jaeger + Prometheus + Grafana.
+  Build: Maven multi-module, Docker Compose for dev.
+
+strict_tdd: true
+
+testing:
+  test_runner:
+    command: "mvn test"
+    framework: JUnit 5
+  test_layers:
+    unit: { available: true, tool: "JUnit 5 + Mockito" }
+    integration: { available: false, tool: "—" }
+    e2e: { available: false, tool: "—" }
+  coverage:
+    available: false
+    command: "—"
+  quality_tools:
+    linter: { available: false, command: "—" }
+    type_checker: { available: false, command: "—" }
+    formatter: { available: false, command: "—" }
+
+phases:
+  proposal: {}
+  spec: {}
+  design: {}
+  tasks: {}
+  apply:
+    max_attempts: 3
+    max_changed_lines: 200
+  verify: {}
+  archive: {}

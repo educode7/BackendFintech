@@ -45,6 +45,26 @@ public class AccountViewRepositoryAdapter implements AccountViewRepository {
     }
 
     @Override
+    public List<AccountView> findAll(int offset, int limit) {
+        return entityManager
+                .createQuery("SELECT a FROM AccountViewEntity a ORDER BY a.lastUpdated DESC",
+                        AccountViewEntity.class)
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList()
+                .stream()
+                .map(AccountViewEntity::toDomain)
+                .toList();
+    }
+
+    @Override
+    public long countAll() {
+        return entityManager
+                .createQuery("SELECT COUNT(a) FROM AccountViewEntity a", Long.class)
+                .getSingleResult();
+    }
+
+    @Override
     @Transactional
     public AccountView save(AccountView view) {
         AccountViewEntity entity = AccountViewEntity.fromDomain(view);

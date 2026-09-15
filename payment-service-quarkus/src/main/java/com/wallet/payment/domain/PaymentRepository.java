@@ -1,6 +1,7 @@
 package com.wallet.payment.domain;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import com.wallet.shared.money.Money;
@@ -25,4 +26,14 @@ public interface PaymentRepository {
      * Find a payment by its idempotency key.
      */
     Optional<Payment> findByIdempotencyKey(String idempotencyKey);
+
+    /**
+     * Find all payments with pagination.
+     */
+    List<Payment> findAll(int offset, int limit);
+
+    /**
+     * Count all payments.
+     */
+    long countAll();
 }

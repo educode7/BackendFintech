@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.wallet.payment.domain.Payment;
 import com.wallet.payment.domain.PaymentRepository;
 import com.wallet.payment.domain.exception.PaymentNotFoundException;
+import com.wallet.shared.api.PageResponse;
 import com.wallet.shared.money.Money;
 
 import io.smallrye.mutiny.Uni;
@@ -61,5 +63,39 @@ class GetPaymentUseCaseTest {
                 .subscribe().withSubscriber(UniAssertSubscriber.create());
 
         subscriber.assertFailedWith(PaymentNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("should return paginated payments")
+    void shouldReturnPaginatedPayments() {
+        Money amount = new Money(new BigDecimal("25.50"), "USD");
+        Payment payment1 = Payment.create("pay-001", "user-001", amount, "key-001");
+        Payment payment2 = Payment.create("pay-002", "user-002", amount, "key-002");
+
+        when(paymentRepository.findAll(0, 10)).thenReturn(List.of(payment1, payment2));
+        when(paymentRepository.countAll()).thenReturn(2L);
+
+        UniAssertSubscriber<PageResponse<PaymentResponse>> subscriber = useCase.findAll(0, 10)
+                .subscribe().withSubscriber(UniAssertSubscriber.create());
+
+        PageResponse<PaymentResponse> response = subscriber.assertCompleted().getItem();
+        assertEquals(2, response.items().size());
+        assertEquals(2L, response.total());
+        assertEquals(0, response.page());
+        assertEquals(10, response.size());
+    }
+
+    @Test
+    @DisplayName("should return empty page when no payments exist")
+    void shouldReturnEmptyPage() {
+        when(paymentRepository.findAll(0, 10)).thenReturn(List.of());
+        when(paymentRepository.countAll()).thenReturn(0L);
+
+        UniAssertSubscriber<PageResponse<PaymentResponse>> subscriber = useCase.findAll(0, 10)
+                .subscribe().withSubscriber(UniAssertSubscriber.create());
+
+        PageResponse<PaymentResponse> response = subscriber.assertCompleted().getItem();
+        assertTrue(response.items().isEmpty());
+        assertEquals(0L, response.total());
     }
 }

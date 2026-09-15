@@ -1,5 +1,6 @@
 package com.wallet.account.domain;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -17,6 +18,16 @@ public interface AccountViewRepository {
      * Find an account view by user ID.
      */
     Optional<AccountView> findByUserId(String userId);
+
+    /**
+     * Find all accounts with pagination.
+     */
+    List<AccountView> findAll(int offset, int limit);
+
+    /**
+     * Count all accounts.
+     */
+    long countAll();
 
     /**
      * Save or update an account view.

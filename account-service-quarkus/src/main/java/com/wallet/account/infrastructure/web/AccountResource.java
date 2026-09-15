@@ -7,6 +7,8 @@ import java.time.Instant;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
@@ -15,6 +17,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -28,6 +31,7 @@ import com.wallet.account.application.AccountCommand;
 import com.wallet.account.application.AccountCommandService;
 import com.wallet.account.application.AccountQueryService;
 import com.wallet.account.application.AccountResponse;
+import com.wallet.shared.api.PageResponse;
 import com.wallet.shared.money.Money;
 
 import io.smallrye.mutiny.Uni;
@@ -50,6 +54,18 @@ public class AccountResource {
     public AccountResource(AccountCommandService commandService, AccountQueryService queryService) {
         this.commandService = commandService;
         this.queryService = queryService;
+    }
+
+    @GET
+    @Operation(summary = "List all accounts with pagination")
+    public Uni<PageResponse<AccountResponse>> list(
+            @QueryParam("page") @Min(0) int page,
+            @QueryParam("size") @Min(1) @Max(100) int size) {
+
+        if (page < 0) page = 0;
+        if (size < 1 || size > 100) size = 20;
+
+        return queryService.findAll(page, size);
     }
 
     @POST

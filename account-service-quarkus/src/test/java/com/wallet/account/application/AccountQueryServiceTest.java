@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.wallet.account.domain.AccountView;
 import com.wallet.account.domain.AccountViewRepository;
 import com.wallet.account.domain.exception.AccountNotFoundException;
+import com.wallet.shared.api.PageResponse;
 
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
@@ -57,5 +59,40 @@ class AccountQueryServiceTest {
                 .subscribe().withSubscriber(UniAssertSubscriber.create());
 
         subscriber.assertFailedWith(AccountNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("should return paginated accounts")
+    void shouldReturnPaginatedAccounts() {
+        AccountView view1 = AccountView.of("acc-001", "user-001",
+                new BigDecimal("100.00"), "USD", "OPEN", 1, Instant.now());
+        AccountView view2 = AccountView.of("acc-002", "user-002",
+                new BigDecimal("200.00"), "USD", "OPEN", 1, Instant.now());
+
+        when(viewRepository.findAll(0, 10)).thenReturn(List.of(view1, view2));
+        when(viewRepository.countAll()).thenReturn(2L);
+
+        UniAssertSubscriber<PageResponse<AccountResponse>> subscriber = queryService.findAll(0, 10)
+                .subscribe().withSubscriber(UniAssertSubscriber.create());
+
+        PageResponse<AccountResponse> response = subscriber.assertCompleted().getItem();
+        assertEquals(2, response.items().size());
+        assertEquals(2L, response.total());
+        assertEquals(0, response.page());
+        assertEquals(10, response.size());
+    }
+
+    @Test
+    @DisplayName("should return empty page when no accounts exist")
+    void shouldReturnEmptyPage() {
+        when(viewRepository.findAll(0, 10)).thenReturn(List.of());
+        when(viewRepository.countAll()).thenReturn(0L);
+
+        UniAssertSubscriber<PageResponse<AccountResponse>> subscriber = queryService.findAll(0, 10)
+                .subscribe().withSubscriber(UniAssertSubscriber.create());
+
+        PageResponse<AccountResponse> response = subscriber.assertCompleted().getItem();
+        assertTrue(response.items().isEmpty());
+        assertEquals(0L, response.total());
     }
 }

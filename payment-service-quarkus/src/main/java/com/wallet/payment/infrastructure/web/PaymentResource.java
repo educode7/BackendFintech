@@ -5,6 +5,8 @@ import java.time.Instant;
 
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
@@ -12,6 +14,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -33,6 +36,7 @@ import com.wallet.payment.application.ProcessPaymentCommand;
 import com.wallet.payment.application.ProcessPaymentUseCase;
 import com.wallet.payment.domain.exception.DuplicatePaymentException;
 import com.wallet.payment.domain.exception.MissingIdempotencyKeyException;
+import com.wallet.shared.api.PageResponse;
 import com.wallet.shared.money.Money;
 
 import io.smallrye.mutiny.Uni;
@@ -113,6 +117,18 @@ public class PaymentResource {
                                         null,
                                         Instant.now()))
                                 .build());
+    }
+
+    @GET
+    @Operation(summary = "List all payments with pagination")
+    public Uni<PageResponse<PaymentResponse>> list(
+            @QueryParam("page") @Min(0) int page,
+            @QueryParam("size") @Min(1) @Max(100) int size) {
+
+        if (page < 0) page = 0;
+        if (size < 1 || size > 100) size = 20;
+
+        return getPaymentUseCase.findAll(page, size);
     }
 
     @GET

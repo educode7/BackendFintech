@@ -1,11 +1,14 @@
 package com.wallet.account.application;
 
+import java.util.List;
+
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import com.wallet.account.domain.AccountView;
 import com.wallet.account.domain.AccountViewRepository;
 import com.wallet.account.domain.exception.AccountNotFoundException;
+import com.wallet.shared.api.PageResponse;
 
 import io.smallrye.mutiny.Uni;
 
@@ -38,5 +41,22 @@ public class AccountQueryService {
         return Uni.createFrom().optional(viewRepository.findByUserId(userId))
                 .onItem().ifNull().failWith(() -> new AccountNotFoundException("user:" + userId))
                 .map(AccountResponse::from);
+    }
+
+    /**
+     * List all accounts with pagination.
+     */
+    public Uni<PageResponse<AccountResponse>> findAll(int page, int size) {
+        return Uni.createFrom().item(() -> {
+            int offset = page * size;
+            List<AccountView> accounts = viewRepository.findAll(offset, size);
+            long total = viewRepository.countAll();
+
+            List<AccountResponse> items = accounts.stream()
+                    .map(AccountResponse::from)
+                    .toList();
+
+            return PageResponse.of(items, total, page, size);
+        });
     }
 }

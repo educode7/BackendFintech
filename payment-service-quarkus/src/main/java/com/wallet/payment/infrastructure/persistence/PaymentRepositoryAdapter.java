@@ -1,5 +1,6 @@
 package com.wallet.payment.infrastructure.persistence;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -57,5 +58,25 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
         } catch (jakarta.persistence.NoResultException e) {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public List<Payment> findAll(int offset, int limit) {
+        return entityManager
+                .createQuery("SELECT p FROM PaymentEntity p ORDER BY p.createdAt DESC",
+                        PaymentEntity.class)
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList()
+                .stream()
+                .map(PaymentEntity::toDomain)
+                .toList();
+    }
+
+    @Override
+    public long countAll() {
+        return entityManager
+                .createQuery("SELECT COUNT(p) FROM PaymentEntity p", Long.class)
+                .getSingleResult();
     }
 }
