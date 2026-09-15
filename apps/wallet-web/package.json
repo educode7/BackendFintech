@@ -20,7 +20,6 @@
     "@angular/router": "^22.1.0",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/auto-instrumentations-web": "^0.67.0",
-    "@opentelemetry/context-zone": "^2.11.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
     "@opentelemetry/instrumentation": "^0.222.0",
     "@opentelemetry/resources": "^2.11.0",
@@ -28,8 +27,7 @@
     "@opentelemetry/sdk-trace-web": "^2.11.0",
     "@opentelemetry/semantic-conventions": "^1.43.0",
     "rxjs": "~7.8.0",
-    "tslib": "^2.3.0",
-    "zone.js": "^0.16.3"
+    "tslib": "^2.3.0"
   },
   "devDependencies": {
     "@angular/build": "^22.1.8",
@@ -44,6 +42,7 @@
     "postcss": "^8.5.28",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "zone.js": "^0.16.3"
   }
 }
