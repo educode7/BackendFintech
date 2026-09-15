@@ -5,7 +5,7 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('@features/dashboard/pages/dashboard/dashboard.component').then(
+      import('@features/dashboard/ui/pages/dashboard/dashboard.component').then(
         (m) => m.DashboardComponent
       ),
   },
@@ -16,14 +16,14 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () =>
-          import('@features/payments/pages/payment-list/payment-list.component').then(
+          import('@features/payments/ui/pages/payment-list/payment-list.component').then(
             (m) => m.PaymentListComponent
           ),
       },
       {
         path: ':id',
         loadComponent: () =>
-          import('@features/payments/pages/payment-detail/payment-detail.component').then(
+          import('@features/payments/ui/pages/payment-detail/payment-detail.component').then(
             (m) => m.PaymentDetailComponent
           ),
       },
@@ -36,21 +36,21 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () =>
-          import('@features/accounts/pages/account-list/account-list.component').then(
+          import('@features/accounts/ui/pages/account-list/account-list.component').then(
             (m) => m.AccountListComponent
           ),
       },
       {
         path: ':accountId',
         loadComponent: () =>
-          import('@features/accounts/pages/account-detail/account-detail.component').then(
+          import('@features/accounts/ui/pages/account-detail/account-detail.component').then(
             (m) => m.AccountDetailComponent
           ),
       },
       {
         path: ':accountId/deposit',
         loadComponent: () =>
-          import('@features/accounts/pages/account-deposit/account-deposit.component').then(
+          import('@features/accounts/ui/pages/account-deposit/account-deposit.component').then(
             (m) => m.AccountDepositComponent
           ),
       },
@@ -60,7 +60,7 @@ export const routes: Routes = [
     path: 'notifications',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('@features/notifications/pages/notification-list/notification-list.component').then(
+      import('@features/notifications/ui/pages/notification-list/notification-list.component').then(
         (m) => m.NotificationListComponent
       ),
   },

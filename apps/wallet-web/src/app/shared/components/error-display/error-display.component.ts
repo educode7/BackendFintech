@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import type { ProblemDetail } from '@models/error.model';
+import type { ProblemDetail } from '@shared/domain/error.model';
 
 @Component({
   standalone: true,
