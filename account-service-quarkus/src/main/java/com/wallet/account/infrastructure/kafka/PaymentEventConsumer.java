@@ -72,8 +72,8 @@ public class PaymentEventConsumer {
                 return Uni.createFrom().voidItem();
             }
 
-            // 2. PROCESS: Apply business logic
             String paymentId = payload.getString("paymentId");
+            String accountId = payload.getString("accountId");
             String userId = payload.getString("userId");
             String status = payload.getString("status");
             JsonObject amountJson = payload.getJsonObject("amount");
@@ -81,12 +81,12 @@ public class PaymentEventConsumer {
                     new java.math.BigDecimal(amountJson.getString("amount")),
                     amountJson.getString("currency"));
 
-            log.infof("Processing PaymentCompletedEvent: paymentId=%s, userId=%s, status=%s",
-                    paymentId, userId, status);
+            log.infof("Processing PaymentCompletedEvent: paymentId=%s, accountId=%s, userId=%s, status=%s",
+                    paymentId, accountId, userId, status);
 
-            // Find account by user ID and apply deposit if COMPLETED
+            // Find account by accountId (direct link) and apply deposit if COMPLETED
             if ("COMPLETED".equals(status)) {
-                Optional<AccountView> accountOpt = viewRepository.findByUserId(userId);
+                Optional<AccountView> accountOpt = viewRepository.findById(accountId);
                 if (accountOpt.isPresent()) {
                     AccountView account = accountOpt.get();
                     // Deposit into account (via command service for consistency)
@@ -100,7 +100,7 @@ public class PaymentEventConsumer {
                     // Acknowledge
                     return Uni.createFrom().voidItem();
                 } else {
-                    log.warnf("No account found for userId=%s — payment %s will be reconciled later", userId, paymentId);
+                    log.warnf("No account found for accountId=%s — payment %s will be reconciled later", accountId, paymentId);
                 }
             }
 

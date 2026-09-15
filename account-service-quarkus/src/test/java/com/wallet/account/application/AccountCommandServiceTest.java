@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.wallet.account.domain.AccountView;
 import com.wallet.account.domain.AccountViewRepository;
 import com.wallet.account.domain.EventStore;
+import com.wallet.account.domain.SnapshotStore;
 import com.wallet.shared.event.AccountEvent;
 import com.wallet.shared.event.AccountOpenedEvent;
 import com.wallet.shared.event.EventMetadata;
@@ -31,12 +32,13 @@ class AccountCommandServiceTest {
 
     @Mock EventStore eventStore;
     @Mock AccountViewRepository viewRepository;
+    @Mock SnapshotStore snapshotStore;
 
     AccountCommandService commandService;
 
     @BeforeEach
     void setUp() {
-        commandService = new AccountCommandService(eventStore, viewRepository);
+        commandService = new AccountCommandService(eventStore, viewRepository, snapshotStore);
     }
 
     @Test
