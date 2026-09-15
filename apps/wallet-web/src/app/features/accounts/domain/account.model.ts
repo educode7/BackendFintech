@@ -28,3 +28,10 @@ export interface WithdrawRequest {
   amount: string;
   currency: string;
 }
+
+export interface AccountPageResponse {
+  data: Account[];
+  total: number;
+  page: number;
+  size: number;
+}

@@ -1,5 +1,5 @@
 import { ErrorHandler, Injectable, inject } from '@angular/core';
-import { LoggerService } from '@core/services/logger.service';
+import { LoggerService } from '@core/infrastructure/logger.service';
 
 /**
  * Global error handler for Angular.

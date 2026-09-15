@@ -1,10 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { AccountListComponent } from './account-list.component';
-import { AccountAdapter } from '../../../infrastructure/account.adapter';
-import { of } from 'rxjs';
+import { AccountStore } from '../../../application/stores/account.store';
 
 describe('AccountListComponent', () => {
   beforeEach(async () => {
@@ -12,12 +9,13 @@ describe('AccountListComponent', () => {
       imports: [AccountListComponent],
       providers: [
         provideRouter([]),
-        provideHttpClient(),
-        provideHttpClientTesting(),
         {
-          provide: AccountAdapter,
+          provide: AccountStore,
           useValue: {
-            list: () => of([]),
+            loading: () => false,
+            error: () => null,
+            accounts: () => [],
+            loadAccounts: () => {},
           },
         },
       ],

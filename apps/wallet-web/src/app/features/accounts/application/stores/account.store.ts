@@ -25,6 +25,21 @@ export class AccountStore {
     this.adapter = adapter;
   }
 
+  loadAccounts(page = 0, size = 20): void {
+    this._loading.set(true);
+    this._error.set(null);
+    this.adapter.list(page, size).subscribe({
+      next: (res) => {
+        this._accounts.set(res.data);
+        this._loading.set(false);
+      },
+      error: (err) => {
+        this._error.set(err.detail || 'Failed to load accounts');
+        this._loading.set(false);
+      },
+    });
+  }
+
   loadAccount(accountId: string): void {
     this._loading.set(true);
     this._error.set(null);

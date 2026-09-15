@@ -1,9 +1,9 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { BaseAdapter } from '@core/infrastructure/base.adapter';
-import type { Account, OpenAccountRequest, DepositRequest, WithdrawRequest } from '../domain/account.model';
+import type { Account, AccountPageResponse, OpenAccountRequest, DepositRequest, WithdrawRequest } from '../domain/account.model';
 
 /**
  * Account HTTP adapter — consumes /api/v1/accounts.
@@ -11,6 +11,17 @@ import type { Account, OpenAccountRequest, DepositRequest, WithdrawRequest } fro
 @Injectable({ providedIn: 'root' })
 export class AccountAdapter extends BaseAdapter {
   private readonly accountHttp = inject(HttpClient);
+
+  list(page = 0, size = 20): Observable<AccountPageResponse> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+
+    return this.accountHttp.get<AccountPageResponse>(
+      `${this.baseUrl}/api/v1/accounts`,
+      { params }
+    ).pipe(catchError(this.handleError));
+  }
 
   open(request: OpenAccountRequest): Observable<Account> {
     return this.accountHttp.post<Account>(

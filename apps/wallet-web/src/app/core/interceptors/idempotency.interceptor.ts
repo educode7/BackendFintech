@@ -1,6 +1,6 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { LoggerService } from '@core/services/logger.service';
+import { LoggerService } from '@core/infrastructure/logger.service';
 
 /**
  * Idempotency interceptor.

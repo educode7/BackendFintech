@@ -3,6 +3,20 @@ import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { traceInterceptor } from './trace.interceptor';
 
+// Mock OTel API
+vi.mock('@opentelemetry/api', () => ({
+  trace: {
+    getTracer: () => ({}),
+    getActiveSpan: () => null,
+  },
+  context: {
+    active: () => ({}),
+  },
+  propagation: {
+    inject: () => {},
+  },
+}));
+
 describe('traceInterceptor', () => {
   let httpClient: HttpClient;
   let httpMock: HttpTestingController;

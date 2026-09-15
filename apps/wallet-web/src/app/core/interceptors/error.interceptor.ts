@@ -2,7 +2,7 @@ import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { LoggerService } from '@core/services/logger.service';
+import { LoggerService } from '@core/infrastructure/logger.service';
 
 /**
  * Global error interceptor.

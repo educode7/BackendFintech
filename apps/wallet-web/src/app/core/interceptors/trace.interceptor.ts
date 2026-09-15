@@ -1,28 +1,52 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { LoggerService } from '@core/services/logger.service';
+import { trace, context, propagation } from '@opentelemetry/api';
+import { LoggerService } from '@core/infrastructure/logger.service';
 
 /**
- * Trace interceptor.
- * Injects W3C traceparent header for distributed tracing.
+ * Trace interceptor — propagates W3C Trace Context via OTel API.
  *
- * Format: 00-{trace-id}-{span-id}-01
- * In production, this would use OpenTelemetry propagation.inject().
- * For now, generates a trace context manually.
+ * If an active span exists (from auto-instrumentation), injects its context.
+ * Otherwise generates a new traceparent header manually.
  */
 export const traceInterceptor: HttpInterceptorFn = (req, next) => {
   const logger = inject(LoggerService);
+  const tracer = trace.getTracer('wallet-web');
 
-  const traceId = generateTraceId();
-  const spanId = generateSpanId();
-  const traceparent = `00-${traceId}-${spanId}-01`;
+  // Check if there's an active span from auto-instrumentation
+  const activeSpan = trace.getActiveSpan();
+
+  let traceId: string;
+  let spanId: string;
+
+  if (activeSpan) {
+    // Use the active span's context
+    const spanContext = activeSpan.spanContext();
+    traceId = spanContext.traceId;
+    spanId = spanContext.spanId;
+  } else {
+    // Generate new IDs (fallback when no active span)
+    traceId = generateTraceId();
+    spanId = generateSpanId();
+  }
 
   // Do not overwrite existing traceparent — preserve upstream propagation
-  const headers: Record<string, string> = req.headers.has('traceparent')
-    ? {}
-    : { traceparent };
+  if (req.headers.has('traceparent')) {
+    return next(req);
+  }
 
-  const cloned = req.clone({ setHeaders: headers });
+  const traceparent = `00-${traceId}-${spanId}-01`;
+
+  // Also inject baggage via OTel propagation
+  const carrier: Record<string, string> = {};
+  propagation.inject(context.active(), carrier);
+
+  const cloned = req.clone({
+    setHeaders: {
+      traceparent,
+      ...carrier,
+    },
+  });
 
   logger.debug('Injected traceparent', 'TraceInterceptor', {
     traceId,

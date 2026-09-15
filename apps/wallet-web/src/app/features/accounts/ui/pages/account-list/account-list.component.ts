@@ -1,11 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { AccountAdapter } from '../../../infrastructure/account.adapter';
+import { AccountStore } from '../../../application/stores/account.store';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { LoadingSpinnerComponent } from '@shared/components/loading-spinner/loading-spinner.component';
 import { ErrorDisplayComponent } from '@shared/components/error-display/error-display.component';
 import { CurrencyPipe } from '@shared/pipes/currency.pipe';
-import type { Account } from '../../../domain/account.model';
 
 @Component({
   selector: 'app-account-list',
@@ -18,13 +17,13 @@ import type { Account } from '../../../domain/account.model';
       <button class="btn btn-primary" (click)="openCreate()">New Account</button>
     </div>
 
-    @if (loading()) {
+    @if (store.loading()) {
       <app-loading-spinner message="Loading accounts..." />
-    } @else if (error()) {
-      <app-error-display [detail]="error()!" title="Failed to load accounts" />
+    } @else if (store.error()) {
+      <app-error-display [detail]="store.error()!" title="Failed to load accounts" />
     } @else {
       <div class="account-grid">
-        @for (account of accounts(); track account.accountId) {
+        @for (account of store.accounts(); track account.accountId) {
           <div class="account-card" (click)="viewDetail(account.accountId)">
             <div class="account-header">
               <span class="mono">{{ account.accountId }}</span>
@@ -57,16 +56,12 @@ import type { Account } from '../../../domain/account.model';
     .empty { text-align: center; color: #999; grid-column: 1/-1; padding: 2rem; }
   `],
 })
-export class AccountListComponent {
-  private readonly accountAdapter = inject(AccountAdapter);
+export class AccountListComponent implements OnInit {
   private readonly router = inject(Router);
+  readonly store = inject(AccountStore);
 
-  loading = signal(true);
-  error = signal<string | null>(null);
-  accounts = signal<Account[]>([]);
-
-  constructor() {
-    this.loading.set(false);
+  ngOnInit() {
+    this.store.loadAccounts();
   }
 
   openCreate() {
