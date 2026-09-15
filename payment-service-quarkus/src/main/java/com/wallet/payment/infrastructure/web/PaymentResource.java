@@ -82,7 +82,7 @@ public class PaymentResource {
 
         Money amount = new Money(request.amount().amount(), request.amount().currency());
         ProcessPaymentCommand command = new ProcessPaymentCommand(
-                request.userId(), amount, idempotencyKey);
+                request.accountId(), request.userId(), amount, idempotencyKey);
 
         String correlationId = uriInfo.getRequestUri().toString();
 

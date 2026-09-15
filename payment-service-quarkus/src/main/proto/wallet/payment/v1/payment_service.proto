@@ -35,15 +35,17 @@ message Money {
 message ProcessPaymentRequest {
   string request_id = 1;   // MANDATORY — idempotency key (UUIDv7 recommended)
   string user_id = 2;      // Owner of the payment
-  Money amount = 3;        // Payment amount
+  string account_id = 3;   // Target account for the payment
+  Money amount = 4;        // Payment amount
 }
 
 message ProcessPaymentResponse {
   string payment_id = 1;
   string user_id = 2;
-  Money amount = 3;
-  PaymentStatus status = 4;
-  google.protobuf.Timestamp created_at = 5;
+  string account_id = 3;
+  Money amount = 4;
+  PaymentStatus status = 5;
+  google.protobuf.Timestamp created_at = 6;
 }
 
 message GetPaymentRequest {
@@ -53,10 +55,11 @@ message GetPaymentRequest {
 message GetPaymentResponse {
   string payment_id = 1;
   string user_id = 2;
-  Money amount = 3;
-  PaymentStatus status = 4;
-  google.protobuf.Timestamp created_at = 5;
-  google.protobuf.Timestamp updated_at = 6;
+  string account_id = 3;
+  Money amount = 4;
+  PaymentStatus status = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
 message WatchPaymentRequest {

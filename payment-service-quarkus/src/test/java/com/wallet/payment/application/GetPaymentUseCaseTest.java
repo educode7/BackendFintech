@@ -41,7 +41,7 @@ class GetPaymentUseCaseTest {
     @DisplayName("should return payment when found")
     void shouldReturnPayment() {
         Money amount = new Money(new BigDecimal("25.50"), "USD");
-        Payment payment = Payment.create("pay-001", "user-001", amount, "key-001");
+        Payment payment = Payment.create("pay-001", "acc-001", "user-001", amount, "key-001");
 
         when(paymentRepository.findById("pay-001")).thenReturn(Optional.of(payment));
 
@@ -50,6 +50,7 @@ class GetPaymentUseCaseTest {
 
         PaymentResponse response = subscriber.assertCompleted().getItem();
         assertEquals("pay-001", response.id());
+        assertEquals("acc-001", response.accountId());
         assertEquals("user-001", response.userId());
         assertEquals(new BigDecimal("25.50"), response.amount());
     }
@@ -69,8 +70,8 @@ class GetPaymentUseCaseTest {
     @DisplayName("should return paginated payments")
     void shouldReturnPaginatedPayments() {
         Money amount = new Money(new BigDecimal("25.50"), "USD");
-        Payment payment1 = Payment.create("pay-001", "user-001", amount, "key-001");
-        Payment payment2 = Payment.create("pay-002", "user-002", amount, "key-002");
+        Payment payment1 = Payment.create("pay-001", "acc-001", "user-001", amount, "key-001");
+        Payment payment2 = Payment.create("pay-002", "acc-002", "user-002", amount, "key-002");
 
         when(paymentRepository.findAll(0, 10)).thenReturn(List.of(payment1, payment2));
         when(paymentRepository.countAll()).thenReturn(2L);

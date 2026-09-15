@@ -23,6 +23,7 @@ public final class Payment {
     }
 
     private final String id;
+    private final String accountId;
     private final String userId;
     private final Money amount;
     private final String idempotencyKey;
@@ -31,9 +32,10 @@ public final class Payment {
     private final java.time.Instant createdAt;
     private final java.time.Instant updatedAt;
 
-    private Payment(String id, String userId, Money amount, String idempotencyKey,
+    private Payment(String id, String accountId, String userId, Money amount, String idempotencyKey,
                     Status status, long version, java.time.Instant createdAt, java.time.Instant updatedAt) {
         this.id = Objects.requireNonNull(id, "id");
+        this.accountId = Objects.requireNonNull(accountId, "accountId");
         this.userId = Objects.requireNonNull(userId, "userId");
         this.amount = Objects.requireNonNull(amount, "amount");
         this.idempotencyKey = Objects.requireNonNull(idempotencyKey, "idempotencyKey");
@@ -46,8 +48,9 @@ public final class Payment {
     /**
      * Factory: create a new payment in PENDING state.
      */
-    public static Payment create(String id, String userId, Money amount, String idempotencyKey) {
+    public static Payment create(String id, String accountId, String userId, Money amount, String idempotencyKey) {
         Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(accountId, "accountId");
         Objects.requireNonNull(userId, "userId");
         Objects.requireNonNull(amount, "amount");
         Objects.requireNonNull(idempotencyKey, "idempotencyKey");
@@ -57,15 +60,15 @@ public final class Payment {
         }
 
         java.time.Instant now = java.time.Instant.now();
-        return new Payment(id, userId, amount, idempotencyKey, Status.PENDING, 0, now, now);
+        return new Payment(id, accountId, userId, amount, idempotencyKey, Status.PENDING, 0, now, now);
     }
 
     /**
      * Factory: reconstitute from persistence (event store or JPA).
      */
-    public static Payment of(String id, String userId, Money amount, String idempotencyKey,
+    public static Payment of(String id, String accountId, String userId, Money amount, String idempotencyKey,
                              Status status, long version, java.time.Instant createdAt, java.time.Instant updatedAt) {
-        return new Payment(id, userId, amount, idempotencyKey, status, version, createdAt, updatedAt);
+        return new Payment(id, accountId, userId, amount, idempotencyKey, status, version, createdAt, updatedAt);
     }
 
     /**
@@ -76,7 +79,7 @@ public final class Payment {
     public Payment startProcessing() {
         assertNotTerminal();
         assertStatus(Status.PENDING, "PROCESSING");
-        return new Payment(id, userId, amount, idempotencyKey, Status.PROCESSING,
+        return new Payment(id, accountId, userId, amount, idempotencyKey, Status.PROCESSING,
                 version + 1, createdAt, java.time.Instant.now());
     }
 
@@ -88,7 +91,7 @@ public final class Payment {
     public Payment complete() {
         assertNotTerminal();
         assertStatus(Status.PROCESSING, "COMPLETED");
-        return new Payment(id, userId, amount, idempotencyKey, Status.COMPLETED,
+        return new Payment(id, accountId, userId, amount, idempotencyKey, Status.COMPLETED,
                 version + 1, createdAt, java.time.Instant.now());
     }
 
@@ -100,7 +103,7 @@ public final class Payment {
     public Payment fail() {
         assertNotTerminal();
         assertStatus(Status.PROCESSING, "FAILED");
-        return new Payment(id, userId, amount, idempotencyKey, Status.FAILED,
+        return new Payment(id, accountId, userId, amount, idempotencyKey, Status.FAILED,
                 version + 1, createdAt, java.time.Instant.now());
     }
 
@@ -121,6 +124,7 @@ public final class Payment {
     // --- Getters ---
 
     public String id() { return id; }
+    public String accountId() { return accountId; }
     public String userId() { return userId; }
     public Money amount() { return amount; }
     public String idempotencyKey() { return idempotencyKey; }
@@ -143,7 +147,7 @@ public final class Payment {
 
     @Override
     public String toString() {
-        return "Payment[id=%s, userId=%s, amount=%s, status=%s, version=%d]"
-                .formatted(id, userId, amount, status, version);
+        return "Payment[id=%s, accountId=%s, userId=%s, amount=%s, status=%s, version=%d]"
+                .formatted(id, accountId, userId, amount, status, version);
     }
 }

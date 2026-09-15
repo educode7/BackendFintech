@@ -19,12 +19,13 @@ class PaymentEntityTest {
     @DisplayName("should map domain to entity")
     void domainToEntity() {
         String uuid = UUID.randomUUID().toString();
-        Payment payment = Payment.create(uuid, "user-001",
+        Payment payment = Payment.create(uuid, "acc-001", "user-001",
                 new Money(new BigDecimal("25.50"), "USD"), "key-001");
         PaymentEntity entity = PaymentEntity.fromDomain(payment);
 
         assertEquals(uuid, entity.getId().toString());
         assertEquals("user-001", entity.getUserId());
+        assertEquals("acc-001", entity.getAccountId());
         assertEquals(new BigDecimal("25.50"), entity.getAmount());
         assertEquals("USD", entity.getCurrency());
         assertEquals("PENDING", entity.getStatus());
@@ -36,7 +37,7 @@ class PaymentEntityTest {
     @DisplayName("should map entity to domain")
     void entityToDomain() {
         String uuid = UUID.randomUUID().toString();
-        Payment payment = Payment.create(uuid, "user-001",
+        Payment payment = Payment.create(uuid, "acc-001", "user-001",
                 new Money(new BigDecimal("25.50"), "USD"), "key-001");
         Payment completed = payment.startProcessing().complete();
         PaymentEntity entity = PaymentEntity.fromDomain(completed);
@@ -44,6 +45,7 @@ class PaymentEntityTest {
         Payment restored = entity.toDomain();
 
         assertEquals(uuid, restored.id());
+        assertEquals("acc-001", restored.accountId());
         assertEquals("user-001", restored.userId());
         assertEquals(new BigDecimal("25.50"), restored.amount().amount());
         assertEquals("USD", restored.amount().currency());
@@ -54,7 +56,7 @@ class PaymentEntityTest {
     @DisplayName("should roundtrip domain -> entity -> domain")
     void roundtrip() {
         String uuid = UUID.randomUUID().toString();
-        Payment original = Payment.create(uuid, "user-001",
+        Payment original = Payment.create(uuid, "acc-001", "user-001",
                 new Money(new BigDecimal("25.50"), "USD"), "key-001");
         PaymentEntity entity = PaymentEntity.fromDomain(original);
         Payment restored = entity.toDomain();

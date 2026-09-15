@@ -103,7 +103,7 @@ public class ProcessPaymentUseCase {
             @SpanAttribute("correlation.id") String correlationId) {
         // 2. Create domain entity
         String paymentId = com.wallet.shared.util.IdGenerator.newId();
-        Payment payment = Payment.create(paymentId, command.userId(), command.amount(), command.idempotencyKey());
+        Payment payment = Payment.create(paymentId, command.accountId(), command.userId(), command.amount(), command.idempotencyKey());
 
         // 3. Persist payment
         Payment saved = paymentRepository.save(payment);
@@ -147,6 +147,7 @@ public class ProcessPaymentUseCase {
                 .put("correlationId", correlationId)
                 .put("payload", new io.vertx.core.json.JsonObject()
                         .put("paymentId", payment.id())
+                        .put("accountId", payment.accountId())
                         .put("userId", payment.userId())
                         .put("amount", new io.vertx.core.json.JsonObject()
                                 .put("amount", payment.amount().amount().toPlainString())

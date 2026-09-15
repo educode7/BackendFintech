@@ -16,10 +16,11 @@ class PaymentResponseTest {
     void shouldCreate() {
         Instant now = Instant.now();
         PaymentResponse response = new PaymentResponse(
-                "pay-001", "user-001", new BigDecimal("25.50"), "USD",
+                "pay-001", "acc-001", "user-001", new BigDecimal("25.50"), "USD",
                 "COMPLETED", now, now);
 
         assertEquals("pay-001", response.id());
+        assertEquals("acc-001", response.accountId());
         assertEquals("user-001", response.userId());
         assertEquals(new BigDecimal("25.50"), response.amount());
         assertEquals("USD", response.currency());
@@ -32,9 +33,10 @@ class PaymentResponseTest {
     @DisplayName("should handle null optional fields")
     void nullFields() {
         PaymentResponse response = new PaymentResponse(
-                "pay-001", "user-001", new BigDecimal("25.50"), "USD",
+                "pay-001", "acc-001", "user-001", new BigDecimal("25.50"), "USD",
                 "PENDING", null, null);
 
+        assertEquals("acc-001", response.accountId());
         assertNull(response.createdAt());
         assertNull(response.updatedAt());
     }

@@ -22,9 +22,10 @@ class PaymentTest {
         @DisplayName("should create payment in PENDING state")
         void shouldCreatePaymentInPendingState() {
             Money amount = new Money(new BigDecimal("25.50"), "USD");
-            Payment payment = Payment.create("pay-001", "user-001", amount, "key-001");
+            Payment payment = Payment.create("pay-001", "acc-001", "user-001", amount, "key-001");
 
             assertEquals("pay-001", payment.id());
+            assertEquals("acc-001", payment.accountId());
             assertEquals("user-001", payment.userId());
             assertEquals(amount, payment.amount());
             assertEquals("key-001", payment.idempotencyKey());
@@ -38,27 +39,29 @@ class PaymentTest {
         @DisplayName("should reject zero amount")
         void shouldRejectZeroAmount() {
             assertThrows(IllegalArgumentException.class,
-                    () -> Payment.create("pay-001", "user-001", new Money(BigDecimal.ZERO, "USD"), "key-001"));
+                    () -> Payment.create("pay-001", "acc-001", "user-001", new Money(BigDecimal.ZERO, "USD"), "key-001"));
         }
 
         @Test
         @DisplayName("should reject negative amount")
         void shouldRejectNegativeAmount() {
             assertThrows(IllegalArgumentException.class,
-                    () -> Payment.create("pay-001", "user-001", new Money(new BigDecimal("-10.00"), "USD"), "key-001"));
+                    () -> Payment.create("pay-001", "acc-001", "user-001", new Money(new BigDecimal("-10.00"), "USD"), "key-001"));
         }
 
         @Test
         @DisplayName("should reject null arguments")
         void shouldRejectNullArguments() {
             assertThrows(NullPointerException.class,
-                    () -> Payment.create(null, "user-001", new Money(BigDecimal.ONE, "USD"), "key"));
+                    () -> Payment.create(null, "acc-001", "user-001", new Money(BigDecimal.ONE, "USD"), "key"));
             assertThrows(NullPointerException.class,
-                    () -> Payment.create("pay-001", null, new Money(BigDecimal.ONE, "USD"), "key"));
+                    () -> Payment.create("pay-001", null, "user-001", new Money(BigDecimal.ONE, "USD"), "key"));
             assertThrows(NullPointerException.class,
-                    () -> Payment.create("pay-001", "user-001", null, "key"));
+                    () -> Payment.create("pay-001", "acc-001", null, new Money(BigDecimal.ONE, "USD"), "key"));
             assertThrows(NullPointerException.class,
-                    () -> Payment.create("pay-001", "user-001", new Money(BigDecimal.ONE, "USD"), null));
+                    () -> Payment.create("pay-001", "acc-001", "user-001", new Money(BigDecimal.ONE, "USD"), null));
+            assertThrows(NullPointerException.class,
+                    () -> Payment.create("pay-001", "acc-001", "user-001", null, "key"));
         }
     }
 
@@ -70,7 +73,7 @@ class PaymentTest {
         @DisplayName("PENDING -> PROCESSING -> COMPLETED")
         void shouldTransitionToCompleted() {
             Money amount = new Money(new BigDecimal("25.50"), "USD");
-            Payment payment = Payment.create("pay-001", "user-001", amount, "key-001");
+            Payment payment = Payment.create("pay-001", "acc-001", "user-001", amount, "key-001");
 
             Payment processing = payment.startProcessing();
             assertEquals(Payment.Status.PROCESSING, processing.status());
@@ -86,7 +89,7 @@ class PaymentTest {
         @DisplayName("PENDING -> PROCESSING -> FAILED")
         void shouldTransitionToFailed() {
             Money amount = new Money(new BigDecimal("25.50"), "USD");
-            Payment payment = Payment.create("pay-001", "user-001", amount, "key-001");
+            Payment payment = Payment.create("pay-001", "acc-001", "user-001", amount, "key-001");
 
             Payment processing = payment.startProcessing();
             Payment failed = processing.fail();
@@ -98,7 +101,7 @@ class PaymentTest {
         @DisplayName("should reject transition from PENDING directly to COMPLETED")
         void shouldRejectPendingToCompleted() {
             Money amount = new Money(new BigDecimal("25.50"), "USD");
-            Payment payment = Payment.create("pay-001", "user-001", amount, "key-001");
+            Payment payment = Payment.create("pay-001", "acc-001", "user-001", amount, "key-001");
 
             assertThrows(IllegalStateException.class, payment::complete);
         }
@@ -107,7 +110,7 @@ class PaymentTest {
         @DisplayName("should reject transition from terminal state")
         void shouldRejectTransitionFromTerminal() {
             Money amount = new Money(new BigDecimal("25.50"), "USD");
-            Payment payment = Payment.create("pay-001", "user-001", amount, "key-001");
+            Payment payment = Payment.create("pay-001", "acc-001", "user-001", amount, "key-001");
             Payment completed = payment.startProcessing().complete();
 
             assertThrows(IllegalStateException.class, completed::startProcessing);
@@ -125,7 +128,7 @@ class PaymentTest {
         void shouldReconstitute() {
             Money amount = new Money(new BigDecimal("100.00"), "EUR");
             Instant now = Instant.now();
-            Payment payment = Payment.of("pay-001", "user-001", amount, "key-001",
+            Payment payment = Payment.of("pay-001", "acc-001", "user-001", amount, "key-001",
                     Payment.Status.COMPLETED, 5, now, now);
 
             assertEquals("pay-001", payment.id());

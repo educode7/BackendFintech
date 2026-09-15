@@ -4,10 +4,10 @@ WORKDIR /app
 COPY pom.xml .
 COPY shared/pom.xml shared/
 COPY payment-service-quarkus/pom.xml payment-service-quarkus/
-RUN mvn dependency:go-offline -pl payment-service-quarkus -am -s .mvn/settings.xml 2>/dev/null || true
+RUN mvn dependency:go-offline -pl payment-service-quarkus -am  2>/dev/null || true
 COPY shared/ shared/
 COPY payment-service-quarkus/ payment-service-quarkus/
-RUN mvn clean package -pl payment-service-quarkus -am -DskipTests -s .mvn/settings.xml
+RUN mvn clean package -pl payment-service-quarkus -am -DskipTests 
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre

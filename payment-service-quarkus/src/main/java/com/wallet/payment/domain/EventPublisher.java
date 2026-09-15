@@ -12,11 +12,12 @@ public interface EventPublisher {
      * Publish a PaymentCompletedEvent after successful processing.
      *
      * @param paymentId   payment ID
+     * @param accountId   target account for deposit
      * @param userId      payment owner
      * @param amount      payment amount
      * @param status      final status ("COMPLETED" or "FAILED")
      * @param correlationId correlation ID for distributed tracing
      */
-    void publishPaymentCompleted(String paymentId, String userId, Money amount,
+    void publishPaymentCompleted(String paymentId, String accountId, String userId, Money amount,
                                  String status, String correlationId);
 }

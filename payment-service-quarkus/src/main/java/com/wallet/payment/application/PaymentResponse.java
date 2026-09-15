@@ -10,6 +10,7 @@ import com.wallet.payment.domain.Payment;
  */
 public record PaymentResponse(
         String id,
+        String accountId,
         String userId,
         BigDecimal amount,
         String currency,
@@ -23,6 +24,7 @@ public record PaymentResponse(
     public static PaymentResponse from(Payment payment) {
         return new PaymentResponse(
                 payment.id(),
+                payment.accountId(),
                 payment.userId(),
                 payment.amount().amount(),
                 payment.amount().currency(),

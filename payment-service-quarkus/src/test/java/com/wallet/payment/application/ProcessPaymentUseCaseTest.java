@@ -47,14 +47,14 @@ class ProcessPaymentUseCaseTest {
     void shouldProcessPayment() {
         // Given
         Money amount = new Money(new BigDecimal("25.50"), "USD");
-        ProcessPaymentCommand command = new ProcessPaymentCommand("user-001", amount, "key-001");
+        ProcessPaymentCommand command = new ProcessPaymentCommand("acc-001", "user-001", amount, "key-001");
 
         when(idempotencyStore.claim("key-001", 24))
                 .thenReturn(IdempotencyStore.SlotState.IN_PROGRESS);
         when(paymentRepository.save(any(Payment.class)))
                 .thenAnswer(invocation -> {
                     Payment p = invocation.getArgument(0);
-                    return Payment.of(p.id(), p.userId(), p.amount(), p.idempotencyKey(),
+                    return Payment.of(p.id(), p.accountId(), p.userId(), p.amount(), p.idempotencyKey(),
                             p.status(), p.version(), p.createdAt(), p.updatedAt());
                 });
 
@@ -80,9 +80,9 @@ class ProcessPaymentUseCaseTest {
     void shouldReplayCachedResponse() {
         // Given
         Money amount = new Money(new BigDecimal("25.50"), "USD");
-        ProcessPaymentCommand command = new ProcessPaymentCommand("user-001", amount, "key-001");
+        ProcessPaymentCommand command = new ProcessPaymentCommand("acc-001", "user-001", amount, "key-001");
 
-        String cachedResponse = "{\"id\":\"pay-001\",\"userId\":\"user-001\",\"amount\":25.50,\"currency\":\"USD\",\"status\":\"COMPLETED\",\"createdAt\":\"2026-01-01T00:00:00Z\",\"updatedAt\":\"2026-01-01T00:00:00Z\"}";
+        String cachedResponse = "{\"id\":\"pay-001\",\"accountId\":\"acc-001\",\"userId\":\"user-001\",\"amount\":25.50,\"currency\":\"USD\",\"status\":\"COMPLETED\",\"createdAt\":\"2026-01-01T00:00:00Z\",\"updatedAt\":\"2026-01-01T00:00:00Z\"}";
 
         when(idempotencyStore.claim("key-001", 24))
                 .thenReturn(IdempotencyStore.SlotState.COMPLETED);
@@ -108,7 +108,7 @@ class ProcessPaymentUseCaseTest {
     void shouldThrowOnInProgress() {
         // Given
         Money amount = new Money(new BigDecimal("25.50"), "USD");
-        ProcessPaymentCommand command = new ProcessPaymentCommand("user-001", amount, "key-001");
+        ProcessPaymentCommand command = new ProcessPaymentCommand("acc-001", "user-001", amount, "key-001");
 
         when(idempotencyStore.claim("key-001", 24))
                 .thenReturn(IdempotencyStore.SlotState.DUPLICATE);

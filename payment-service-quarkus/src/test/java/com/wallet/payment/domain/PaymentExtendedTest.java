@@ -29,7 +29,7 @@ class PaymentExtendedTest {
         @Test
         @DisplayName("PENDING can transition to PROCESSING via startProcessing()")
         void pendingToProcessing() {
-            Payment p = Payment.create("p1", "u1", new Money(BigDecimal.TEN, "USD"), "k1");
+            Payment p = Payment.create("p1", "acc-1", "u1", new Money(BigDecimal.TEN, "USD"), "k1");
             assertEquals(Payment.Status.PENDING, p.status());
             Payment processing = p.startProcessing();
             assertEquals(Payment.Status.PROCESSING, processing.status());
@@ -38,7 +38,7 @@ class PaymentExtendedTest {
         @Test
         @DisplayName("PROCESSING can transition to COMPLETED or FAILED")
         void processingTransitions() {
-            Payment p = Payment.create("p1", "u1", new Money(BigDecimal.TEN, "USD"), "k1")
+            Payment p = Payment.create("p1", "acc-1", "u1", new Money(BigDecimal.TEN, "USD"), "k1")
                     .startProcessing();
             assertEquals(Payment.Status.COMPLETED, p.complete().status());
             assertEquals(Payment.Status.FAILED, p.fail().status());
@@ -47,13 +47,13 @@ class PaymentExtendedTest {
         @Test
         @DisplayName("Terminal states cannot transition")
         void terminalNoTransitions() {
-            Payment completed = Payment.create("p1", "u1", new Money(BigDecimal.TEN, "USD"), "k1")
+            Payment completed = Payment.create("p1", "acc-1", "u1", new Money(BigDecimal.TEN, "USD"), "k1")
                     .startProcessing().complete();
             assertThrows(IllegalStateException.class, completed::startProcessing);
             assertThrows(IllegalStateException.class, completed::complete);
             assertThrows(IllegalStateException.class, completed::fail);
 
-            Payment failed = Payment.create("p2", "u1", new Money(BigDecimal.TEN, "USD"), "k1")
+            Payment failed = Payment.create("p2", "acc-2", "u1", new Money(BigDecimal.TEN, "USD"), "k1")
                     .startProcessing().fail();
             assertThrows(IllegalStateException.class, failed::startProcessing);
             assertThrows(IllegalStateException.class, failed::complete);
@@ -69,7 +69,7 @@ class PaymentExtendedTest {
         @DisplayName("should accept positive amounts with many decimals")
         void manyDecimals() {
             Money amount = new Money(new BigDecimal("0.00000001"), "USD");
-            Payment payment = Payment.create("pay-001", "user-001", amount, "key-001");
+            Payment payment = Payment.create("pay-001", "acc-001", "user-001", amount, "key-001");
             assertEquals(amount, payment.amount());
         }
 
@@ -77,7 +77,7 @@ class PaymentExtendedTest {
         @DisplayName("should accept large amounts")
         void largeAmount() {
             Money amount = new Money(new BigDecimal("999999999999.99"), "USD");
-            Payment payment = Payment.create("pay-001", "user-001", amount, "key-001");
+            Payment payment = Payment.create("pay-001", "acc-001", "user-001", amount, "key-001");
             assertEquals(amount, payment.amount());
         }
 
@@ -85,7 +85,7 @@ class PaymentExtendedTest {
         @DisplayName("should reject null amount")
         void nullAmount() {
             assertThrows(NullPointerException.class,
-                    () -> Payment.create("pay-001", "user-001", null, "key-001"));
+                    () -> Payment.create("pay-001", "acc-001", "user-001", null, "key-001"));
         }
     }
 
@@ -96,8 +96,8 @@ class PaymentExtendedTest {
         @Test
         @DisplayName("payments with same ID should be equal")
         void sameId() {
-            Payment p1 = Payment.create("pay-001", "user-001", new Money(BigDecimal.TEN, "USD"), "key-001");
-            Payment p2 = Payment.create("pay-001", "user-002", new Money(BigDecimal.ONE, "EUR"), "key-002");
+            Payment p1 = Payment.create("pay-001", "acc-001", "user-001", new Money(BigDecimal.TEN, "USD"), "key-001");
+            Payment p2 = Payment.create("pay-001", "acc-002", "user-002", new Money(BigDecimal.ONE, "EUR"), "key-002");
             assertEquals(p1, p2);
             assertEquals(p1.hashCode(), p2.hashCode());
         }
@@ -105,8 +105,8 @@ class PaymentExtendedTest {
         @Test
         @DisplayName("payments with different IDs should not be equal")
         void differentId() {
-            Payment p1 = Payment.create("pay-001", "user-001", new Money(BigDecimal.TEN, "USD"), "key-001");
-            Payment p2 = Payment.create("pay-002", "user-001", new Money(BigDecimal.TEN, "USD"), "key-001");
+            Payment p1 = Payment.create("pay-001", "acc-001", "user-001", new Money(BigDecimal.TEN, "USD"), "key-001");
+            Payment p2 = Payment.create("pay-002", "acc-001", "user-001", new Money(BigDecimal.TEN, "USD"), "key-001");
             assertNotEquals(p1, p2);
         }
     }

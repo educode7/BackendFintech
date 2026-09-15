@@ -37,6 +37,9 @@ public class PaymentEntity {
     @Column(name = "user_id", nullable = false, length = 64)
     private String userId;
 
+    @Column(name = "account_id", nullable = false, length = 64)
+    private String accountId;
+
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;
 
@@ -68,6 +71,7 @@ public class PaymentEntity {
         PaymentEntity entity = new PaymentEntity();
         entity.id = UUID.fromString(domain.id());
         entity.userId = domain.userId();
+        entity.accountId = domain.accountId();
         entity.amount = domain.amount().amount();
         entity.currency = domain.amount().currency();
         entity.status = domain.status().name();
@@ -84,7 +88,7 @@ public class PaymentEntity {
     public Payment toDomain() {
         Money money = new Money(amount, currency);
         Payment.Status domainStatus = Payment.Status.valueOf(status);
-        return Payment.of(id.toString(), userId, money, idempotencyKey,
+        return Payment.of(id.toString(), accountId, userId, money, idempotencyKey,
                 domainStatus, version, createdAt, updatedAt);
     }
 
@@ -92,6 +96,7 @@ public class PaymentEntity {
 
     public UUID getId() { return id; }
     public String getUserId() { return userId; }
+    public String getAccountId() { return accountId; }
     public BigDecimal getAmount() { return amount; }
     public String getCurrency() { return currency; }
     public String getStatus() { return status; }

@@ -33,7 +33,7 @@ public class KafkaEventPublisher implements EventPublisher {
     Emitter<String> emitter;
 
     @Override
-    public void publishPaymentCompleted(String paymentId, String userId, Money amount,
+    public void publishPaymentCompleted(String paymentId, String accountId, String userId, Money amount,
                                         String status, String correlationId) {
         String eventId = UUID.randomUUID().toString();
         String eventType = "PaymentCompleted";
@@ -46,6 +46,7 @@ public class KafkaEventPublisher implements EventPublisher {
                 .put("correlationId", correlationId)
                 .put("payload", new JsonObject()
                         .put("paymentId", paymentId)
+                        .put("accountId", accountId)
                         .put("userId", userId)
                         .put("amount", new JsonObject()
                                 .put("amount", amount.amount().toPlainString())

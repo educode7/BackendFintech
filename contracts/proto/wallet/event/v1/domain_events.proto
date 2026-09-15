@@ -63,9 +63,10 @@ message MoneyValue {
 
 message PaymentCompletedEvent {
   string payment_id = 1;
-  string user_id = 2;
-  MoneyValue amount = 3;
-  string status = 4;           // "COMPLETED" or "FAILED"
+  string account_id = 2;
+  string user_id = 3;
+  MoneyValue amount = 4;
+  string status = 5;           // "COMPLETED" or "FAILED"
 }
 
 // ----------------------------------------------------------------------------

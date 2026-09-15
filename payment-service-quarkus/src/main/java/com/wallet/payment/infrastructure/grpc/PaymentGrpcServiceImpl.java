@@ -56,7 +56,7 @@ public class PaymentGrpcServiceImpl extends MutinyPaymentServiceGrpc.PaymentServ
                 request.getAmount().getCurrency());
 
         ProcessPaymentCommand command = new ProcessPaymentCommand(
-                request.getUserId(), amount, requestId);
+                request.getAccountId(), request.getUserId(), amount, requestId);
 
         return processPaymentUseCase.execute(command, correlationId)
                 .map(this::toGrpcResponse)

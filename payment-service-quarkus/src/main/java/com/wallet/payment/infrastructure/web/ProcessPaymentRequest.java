@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Size;
  * REST request DTO for ProcessPayment.
  */
 public record ProcessPaymentRequest(
+        @NotBlank @Size(max = 64) String accountId,
         @NotBlank @Size(max = 64) String userId,
         @NotNull Amount amount
 ) {
