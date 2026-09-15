@@ -4,10 +4,10 @@ WORKDIR /app
 COPY pom.xml .
 COPY shared/pom.xml shared/
 COPY api-gateway-quarkus/pom.xml api-gateway-quarkus/
-RUN mvn dependency:go-offline -pl api-gateway-quarkus -am -s .mvn/settings.xml 2>/dev/null || true
+RUN mvn dependency:go-offline -pl api-gateway-quarkus -am  2>/dev/null || true
 COPY shared/ shared/
 COPY api-gateway-quarkus/ api-gateway-quarkus/
-RUN mvn clean package -pl api-gateway-quarkus -am -DskipTests -s .mvn/settings.xml
+RUN mvn clean package -pl api-gateway-quarkus -am -DskipTests 
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre

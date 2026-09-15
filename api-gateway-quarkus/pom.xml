@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus.platform</groupId>
         <artifactId>quarkus-bom</artifactId>
-        <version>3.17.0</version>
+        <version>3.33.3.2</version>
         <relativePath/>
     </parent>
     <groupId>com.wallet</groupId>
@@ -14,9 +14,9 @@
     <version>1.0.0-SNAPSHOT</version>
     <name>API Gateway (Quarkus)</name>
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <quarkus.platform.version>3.17.0</quarkus.platform.version>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
+        <quarkus.platform.version>3.33.3.2</quarkus.platform.version>
     </properties>
     <dependencyManagement>
         <dependencies>

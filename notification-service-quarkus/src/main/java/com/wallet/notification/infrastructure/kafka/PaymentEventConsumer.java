@@ -64,6 +64,7 @@ public class PaymentEventConsumer {
             // 2. Deserialize event
             PaymentCompletedEvent event = new PaymentCompletedEvent(
                     payload.getString("paymentId"),
+                    payload.getString("accountId"),
                     payload.getString("userId"),
                     new Money(
                             new java.math.BigDecimal(payload.getJsonObject("amount").getString("amount")),

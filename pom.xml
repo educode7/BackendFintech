@@ -13,7 +13,6 @@
 
     <modules>
         <module>shared</module>
-        <module>config-service</module>
         <module>api-gateway-quarkus</module>
         <module>payment-service-quarkus</module>
         <module>account-service-quarkus</module>
@@ -26,25 +25,18 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <spring-boot.version>4.1.0</spring-boot.version>
-        <spring-cloud.version>2025.1.2</spring-cloud.version>
         <postgresql.version>42.7.11</postgresql.version>
         <archunit.version>1.5.0</archunit.version>
+        <testcontainers.version>1.21.3</testcontainers.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Quarkus BOM: manages Jackson, SLF4J, Lombok, JUnit, AssertJ, etc. -->
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
+                <groupId>io.quarkus.platform</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>3.33.3.2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -59,15 +51,18 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.wallet</groupId>
-                <artifactId>config-service</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>com.tngtech.archunit</groupId>
                 <artifactId>archunit-junit5</artifactId>
                 <version>${archunit.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <!-- Testcontainers: no longer managed by Quarkus BOM -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -86,6 +81,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
+                            <version>1.18.42</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
@@ -119,19 +115,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring-boot.version}</version>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
             </plugin>
             </plugins>
         </pluginManagement>

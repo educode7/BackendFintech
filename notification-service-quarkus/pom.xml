@@ -5,22 +5,27 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkus.platform</groupId><artifactId>quarkus-bom</artifactId>
-        <version>3.17.0</version><relativePath/>
+        <version>3.33.3.2</version><relativePath/>
     </parent>
     <groupId>com.wallet</groupId>
     <artifactId>notification-service-quarkus</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>Notification Service (Quarkus)</name>
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <quarkus.platform.version>3.17.0</quarkus.platform.version>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
+        <quarkus.platform.version>3.33.3.2</quarkus.platform.version>
+        <testcontainers.version>1.21.3</testcontainers.version>
     </properties>
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>io.quarkus.platform</groupId><artifactId>quarkus-bom</artifactId>
                 <version>${quarkus.platform.version}</version><type>pom</type><scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId><artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version><type>pom</type><scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -40,8 +45,8 @@
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-opentelemetry</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-config-yaml</artifactId></dependency>
         <dependency><groupId>com.wallet</groupId><artifactId>shared</artifactId><version>1.0.0</version></dependency>
-        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-junit5</artifactId><scope>test</scope></dependency>
-        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-junit5-mockito</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-junit</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-junit-mockito</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.testcontainers</groupId><artifactId>postgresql</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.testcontainers</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
         <dependency><groupId>io.rest-assured</groupId><artifactId>rest-assured</artifactId><scope>test</scope></dependency>
