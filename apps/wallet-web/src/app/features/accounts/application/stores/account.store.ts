@@ -58,7 +58,7 @@ export class AccountStore {
   openAccount(request: { userId: string; initialBalance: { amount: string; currency: string } }): void {
     this._loading.set(true);
     this._error.set(null);
-    this.adapter.open(request).subscribe({
+    this.adapter.open(request, crypto.randomUUID()).subscribe({
       next: (account) => {
         this._accounts.update((accounts) => [...accounts, account]);
         this._selectedAccount.set(account);
@@ -74,7 +74,7 @@ export class AccountStore {
   deposit(accountId: string, request: { amount: string; currency: string }): void {
     this._loading.set(true);
     this._error.set(null);
-    this.adapter.deposit(accountId, request).subscribe({
+    this.adapter.deposit(accountId, request, crypto.randomUUID()).subscribe({
       next: (account) => {
         this._selectedAccount.set(account);
         this._accounts.update((accounts) =>
@@ -92,7 +92,7 @@ export class AccountStore {
   withdraw(accountId: string, request: { amount: string; currency: string }): void {
     this._loading.set(true);
     this._error.set(null);
-    this.adapter.withdraw(accountId, request).subscribe({
+    this.adapter.withdraw(accountId, request, crypto.randomUUID()).subscribe({
       next: (account) => {
         this._selectedAccount.set(account);
         this._accounts.update((accounts) =>

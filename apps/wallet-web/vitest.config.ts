@@ -1,5 +1,5 @@
 import { defineConfig, type Plugin } from 'vitest/config';
-import tsconfigPaths from 'vitest-tsconfig-paths';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 /**
  * Angular 22 is zoneless. The generated init-testbed.js contains:
@@ -26,7 +26,7 @@ function stripZoneJsImport(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [tsconfigPaths(), stripZoneJsImport()],
+  plugins: [tsconfigPaths({ root: __dirname }), stripZoneJsImport()],
   test: {
     globals: true,
   },

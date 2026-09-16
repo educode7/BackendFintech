@@ -23,10 +23,11 @@ export class AccountAdapter extends BaseAdapter {
     ).pipe(catchError(this.handleError));
   }
 
-  open(request: OpenAccountRequest): Observable<Account> {
+  open(request: OpenAccountRequest, idempotencyKey: string): Observable<Account> {
     return this.accountHttp.post<Account>(
       `${this.baseUrl}/api/v1/accounts`,
-      request
+      request,
+      { headers: { 'Idempotency-Key': idempotencyKey } }
     ).pipe(catchError(this.handleError));
   }
 
@@ -36,17 +37,19 @@ export class AccountAdapter extends BaseAdapter {
     ).pipe(catchError(this.handleError));
   }
 
-  deposit(accountId: string, request: DepositRequest): Observable<Account> {
+  deposit(accountId: string, request: DepositRequest, idempotencyKey: string): Observable<Account> {
     return this.accountHttp.post<Account>(
       `${this.baseUrl}/api/v1/accounts/${accountId}/deposits`,
-      request
+      request,
+      { headers: { 'Idempotency-Key': idempotencyKey } }
     ).pipe(catchError(this.handleError));
   }
 
-  withdraw(accountId: string, request: WithdrawRequest): Observable<Account> {
+  withdraw(accountId: string, request: WithdrawRequest, idempotencyKey: string): Observable<Account> {
     return this.accountHttp.post<Account>(
       `${this.baseUrl}/api/v1/accounts/${accountId}/withdrawals`,
-      request
+      request,
+      { headers: { 'Idempotency-Key': idempotencyKey } }
     ).pipe(catchError(this.handleError));
   }
 }

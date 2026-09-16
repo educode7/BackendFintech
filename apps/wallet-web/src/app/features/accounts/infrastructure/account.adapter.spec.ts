@@ -1,27 +1,29 @@
-import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import '@angular/compiler';
+import { Injector } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { of } from 'rxjs';
 import { AccountAdapter } from './account.adapter';
 import { environment } from '@env/environment';
 
+function createAdapter(httpMock: HttpClient) {
+  const injector = Injector.create({
+    providers: [
+      { provide: HttpClient, useValue: httpMock },
+      AccountAdapter,
+    ],
+  });
+  return injector.get(AccountAdapter);
+}
+
 describe('AccountAdapter', () => {
   let adapter: AccountAdapter;
-  let httpMock: HttpTestingController;
+  let httpGet: ReturnType<typeof vi.fn>;
+  let httpPost: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [
-        AccountAdapter,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
-    });
-    adapter = TestBed.inject(AccountAdapter);
-    httpMock = TestBed.inject(HttpTestingController);
-  });
-
-  afterEach(() => {
-    httpMock.verify();
+    httpGet = vi.fn();
+    httpPost = vi.fn();
+    adapter = createAdapter({ get: httpGet, post: httpPost } as unknown as HttpClient);
   });
 
   it('should be created', () => {
@@ -29,7 +31,7 @@ describe('AccountAdapter', () => {
   });
 
   describe('open', () => {
-    it('should POST to /api/v1/accounts', () => {
+    it('should POST to /api/v1/accounts with idempotency key', () => {
       const mockAccount = {
         accountId: 'acc-1',
         userId: 'user-1',
@@ -37,17 +39,22 @@ describe('AccountAdapter', () => {
         version: 1,
         createdAt: new Date().toISOString(),
       };
+      httpPost.mockReturnValue(of(mockAccount));
 
-      adapter.open({
-        userId: 'user-1',
-        initialBalance: { amount: '100.00', currency: 'USD' },
-      }).subscribe((account) => {
+      const idempotencyKey = crypto.randomUUID();
+
+      adapter.open(
+        { userId: 'user-1', initialBalance: { amount: '100.00', currency: 'USD' } },
+        idempotencyKey,
+      ).subscribe((account) => {
         expect(account.accountId).toBe('acc-1');
       });
 
-      const req = httpMock.expectOne(`${environment.apiGateway}/api/v1/accounts`);
-      expect(req.request.method).toBe('POST');
-      req.flush(mockAccount);
+      expect(httpPost).toHaveBeenCalledOnce();
+      const [url, body, opts] = httpPost.mock.calls[0];
+      expect(url).toBe(`${environment.apiGateway}/api/v1/accounts`);
+      expect(body).toEqual({ userId: 'user-1', initialBalance: { amount: '100.00', currency: 'USD' } });
+      expect(opts.headers['Idempotency-Key']).toBe(idempotencyKey);
     });
   });
 
@@ -60,19 +67,19 @@ describe('AccountAdapter', () => {
         version: 1,
         createdAt: new Date().toISOString(),
       };
+      httpGet.mockReturnValue(of(mockAccount));
 
       adapter.getById('acc-1').subscribe((account) => {
         expect(account.accountId).toBe('acc-1');
       });
 
-      const req = httpMock.expectOne(`${environment.apiGateway}/api/v1/accounts/acc-1`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockAccount);
+      expect(httpGet).toHaveBeenCalledOnce();
+      expect(httpGet.mock.calls[0][0]).toBe(`${environment.apiGateway}/api/v1/accounts/acc-1`);
     });
   });
 
   describe('deposit', () => {
-    it('should POST to /api/v1/accounts/:accountId/deposits', () => {
+    it('should POST to /api/v1/accounts/:accountId/deposits with idempotency key', () => {
       const mockAccount = {
         accountId: 'acc-1',
         userId: 'user-1',
@@ -80,19 +87,24 @@ describe('AccountAdapter', () => {
         version: 2,
         createdAt: new Date().toISOString(),
       };
+      httpPost.mockReturnValue(of(mockAccount));
 
-      adapter.deposit('acc-1', { amount: '50.00', currency: 'USD' }).subscribe((account) => {
+      const idempotencyKey = crypto.randomUUID();
+
+      adapter.deposit('acc-1', { amount: '50.00', currency: 'USD' }, idempotencyKey).subscribe((account) => {
         expect(account.balance.amount).toBe('150.00');
       });
 
-      const req = httpMock.expectOne(`${environment.apiGateway}/api/v1/accounts/acc-1/deposits`);
-      expect(req.request.method).toBe('POST');
-      req.flush(mockAccount);
+      expect(httpPost).toHaveBeenCalledOnce();
+      const [url, body, opts] = httpPost.mock.calls[0];
+      expect(url).toBe(`${environment.apiGateway}/api/v1/accounts/acc-1/deposits`);
+      expect(body).toEqual({ amount: '50.00', currency: 'USD' });
+      expect(opts.headers['Idempotency-Key']).toBe(idempotencyKey);
     });
   });
 
   describe('withdraw', () => {
-    it('should POST to /api/v1/accounts/:accountId/withdrawals', () => {
+    it('should POST to /api/v1/accounts/:accountId/withdrawals with idempotency key', () => {
       const mockAccount = {
         accountId: 'acc-1',
         userId: 'user-1',
@@ -100,14 +112,41 @@ describe('AccountAdapter', () => {
         version: 3,
         createdAt: new Date().toISOString(),
       };
+      httpPost.mockReturnValue(of(mockAccount));
 
-      adapter.withdraw('acc-1', { amount: '50.00', currency: 'USD' }).subscribe((account) => {
+      const idempotencyKey = crypto.randomUUID();
+
+      adapter.withdraw('acc-1', { amount: '50.00', currency: 'USD' }, idempotencyKey).subscribe((account) => {
         expect(account.balance.amount).toBe('50.00');
       });
 
-      const req = httpMock.expectOne(`${environment.apiGateway}/api/v1/accounts/acc-1/withdrawals`);
-      expect(req.request.method).toBe('POST');
-      req.flush(mockAccount);
+      expect(httpPost).toHaveBeenCalledOnce();
+      const [url, body, opts] = httpPost.mock.calls[0];
+      expect(url).toBe(`${environment.apiGateway}/api/v1/accounts/acc-1/withdrawals`);
+      expect(body).toEqual({ amount: '50.00', currency: 'USD' });
+      expect(opts.headers['Idempotency-Key']).toBe(idempotencyKey);
+    });
+  });
+
+  describe('list', () => {
+    it('should GET /api/v1/accounts with pagination params', () => {
+      const mockResponse = {
+        data: [],
+        total: 0,
+        page: 0,
+        size: 20,
+      };
+      httpGet.mockReturnValue(of(mockResponse));
+
+      adapter.list(0, 20).subscribe((response) => {
+        expect(response.total).toBe(0);
+      });
+
+      expect(httpGet).toHaveBeenCalledOnce();
+      const [url, opts] = httpGet.mock.calls[0];
+      expect(url).toBe(`${environment.apiGateway}/api/v1/accounts`);
+      expect(opts.params.get('page')).toBe('0');
+      expect(opts.params.get('size')).toBe('20');
     });
   });
 });
