@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import '@angular/compiler';
 import { AccountStore } from './account.store';
 import { AccountAdapter } from '../../infrastructure/account.adapter';
 import { of, throwError } from 'rxjs';
@@ -10,6 +10,7 @@ describe('AccountStore', () => {
     open: ReturnType<typeof vi.fn>;
     deposit: ReturnType<typeof vi.fn>;
     withdraw: ReturnType<typeof vi.fn>;
+    list: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -18,16 +19,9 @@ describe('AccountStore', () => {
       open: vi.fn(),
       deposit: vi.fn(),
       withdraw: vi.fn(),
+      list: vi.fn(),
     };
-
-    TestBed.configureTestingModule({
-      providers: [
-        AccountStore,
-        { provide: AccountAdapter, useValue: adapterSpy },
-      ],
-    });
-
-    store = TestBed.inject(AccountStore);
+    store = new AccountStore(adapterSpy as unknown as AccountAdapter);
   });
 
   it('should be created', () => {
@@ -71,7 +65,7 @@ describe('AccountStore', () => {
   });
 
   describe('openAccount', () => {
-    it('should add new account to list', () => {
+    it('should add new account to list and pass an idempotency key', () => {
       const mockAccount = {
         accountId: 'acc-2',
         userId: 'user-2',
@@ -83,6 +77,12 @@ describe('AccountStore', () => {
 
       store.openAccount({ userId: 'user-2', initialBalance: { amount: '50.00', currency: 'USD' } });
 
+      expect(adapterSpy.open).toHaveBeenCalledTimes(1);
+      const [, idempotencyKey] = adapterSpy.open.mock.calls[0];
+      expect(typeof idempotencyKey).toBe('string');
+      expect(idempotencyKey).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      );
       expect(store.accounts().length).toBe(1);
       expect(store.accounts()[0].accountId).toBe('acc-2');
       expect(store.hasAccounts()).toBe(true);
@@ -90,7 +90,7 @@ describe('AccountStore', () => {
   });
 
   describe('deposit', () => {
-    it('should update account balance', () => {
+    it('should update account balance and pass an idempotency key', () => {
       const initial = {
         accountId: 'acc-1',
         userId: 'user-1',
@@ -106,6 +106,12 @@ describe('AccountStore', () => {
       adapterSpy.deposit.mockReturnValue(of(updated));
       store.deposit('acc-1', { amount: '50.00', currency: 'USD' });
 
+      expect(adapterSpy.deposit).toHaveBeenCalledTimes(1);
+      const [, , idempotencyKey] = adapterSpy.deposit.mock.calls[0];
+      expect(typeof idempotencyKey).toBe('string');
+      expect(idempotencyKey).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      );
       expect(store.selectedAccount()?.balance.amount).toBe('150.00');
       expect(store.accounts()[0].balance.amount).toBe('150.00');
     });
