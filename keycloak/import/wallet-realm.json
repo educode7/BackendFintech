@@ -34,8 +34,39 @@
       "defaultClientScopes": [
         "openid",
         "profile",
-        "email"
+        "email",
+        "offline_access"
+      ],
+      "protocolMappers": [
+        {
+          "name": "otp-enabled",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "otpEnabled",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "otp_enabled",
+            "jsonType.label": "boolean"
+          }
+        }
       ]
+    }
+  ],
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyCodeRecoveryEnabled": true,
+  "otpSupportedApplications": ["FREEOTP", "GOOGLE_AUTHENTICATOR"],
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 0
     }
   ],
   "users": [

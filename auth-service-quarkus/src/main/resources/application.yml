@@ -1,0 +1,66 @@
+quarkus:
+  application:
+    name: auth-service
+    version: 1.0.0
+
+  http:
+    port: 8084
+    host: 0.0.0.0
+
+  oidc:
+    auth-server-url: http://localhost:8180/realms/wallet
+    client-id: wallet-backend
+    credentials:
+      secret: ""
+    token:
+      issuer: http://localhost:8180/realms/wallet
+
+  smallrye-openapi:
+    info-title: Auth Service API
+    info-version: 1.0.0
+
+  smallrye-health:
+    enabled: true
+    expose:
+      enabled: true
+
+  opentelemetry:
+    enabled: true
+    service:
+      name: auth-service
+    exporter:
+      otlp:
+        endpoint: http://localhost:4317
+
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+
+  log:
+    console:
+      enable: true
+    level: INFO
+    category:
+      "com.wallet.auth": INFO
+
+keycloak:
+  admin:
+    url: http://localhost:8180
+    username: admin
+    password: admin
+
+wallet:
+  auth:
+    mfa:
+      totp:
+        algorithm: HmacSHA1
+        digits: 6
+        period: 30
+        window: 1
+      recovery-codes:
+        count: 10
+        length: 8
+      rate-limit:
+        max-attempts: 5
+        lockout-duration: 300

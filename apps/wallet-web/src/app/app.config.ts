@@ -7,6 +7,7 @@ import { requestIdInterceptor } from '@core/interceptors/request-id.interceptor'
 import { idempotencyInterceptor } from '@core/interceptors/idempotency.interceptor';
 import { traceInterceptor } from '@core/interceptors/trace.interceptor';
 import { errorInterceptor } from '@core/interceptors/error.interceptor';
+import { tokenRefreshInterceptor } from '@core/interceptors/token-refresh.interceptor';
 import { GlobalErrorHandler } from '@core/error-handling/global-error.handler';
 
 export const appConfig: ApplicationConfig = {
@@ -21,6 +22,7 @@ export const appConfig: ApplicationConfig = {
         requestIdInterceptor,
         idempotencyInterceptor,
         traceInterceptor,
+        tokenRefreshInterceptor,
         errorInterceptor,
       ])
     ),
