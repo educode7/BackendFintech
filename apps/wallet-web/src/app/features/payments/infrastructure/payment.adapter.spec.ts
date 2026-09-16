@@ -1,27 +1,29 @@
-import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import '@angular/compiler';
+import { Injector, runInInjectionContext } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { of } from 'rxjs';
 import { PaymentAdapter } from './payment.adapter';
 import { environment } from '@env/environment';
 
+function createAdapter(httpMock: HttpClient) {
+  const injector = Injector.create({
+    providers: [
+      { provide: HttpClient, useValue: httpMock },
+      PaymentAdapter,
+    ],
+  });
+  return injector.get(PaymentAdapter);
+}
+
 describe('PaymentAdapter', () => {
   let adapter: PaymentAdapter;
-  let httpMock: HttpTestingController;
+  let httpGet: ReturnType<typeof vi.fn>;
+  let httpPost: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [
-        PaymentAdapter,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
-    });
-    adapter = TestBed.inject(PaymentAdapter);
-    httpMock = TestBed.inject(HttpTestingController);
-  });
-
-  afterEach(() => {
-    httpMock.verify();
+    httpGet = vi.fn();
+    httpPost = vi.fn();
+    adapter = createAdapter({ get: httpGet, post: httpPost } as unknown as HttpClient);
   });
 
   it('should be created', () => {
@@ -38,19 +40,21 @@ describe('PaymentAdapter', () => {
         idempotencyKey: 'idem-1',
         createdAt: new Date().toISOString(),
       };
+      httpPost.mockReturnValue(of(mockPayment));
 
       adapter.process(
         { userId: 'user-1', amount: { amount: '10.00', currency: 'USD' } },
-        'idem-1'
+        'idem-1',
       ).subscribe((payment) => {
         expect(payment.id).toBe('pay-1');
         expect(payment.status).toBe('PENDING');
       });
 
-      const req = httpMock.expectOne(`${environment.apiGateway}/api/v1/payments`);
-      expect(req.request.method).toBe('POST');
-      expect(req.request.headers.get('Idempotency-Key')).toBe('idem-1');
-      req.flush(mockPayment);
+      expect(httpPost).toHaveBeenCalledOnce();
+      const [url, body, opts] = httpPost.mock.calls[0];
+      expect(url).toBe(`${environment.apiGateway}/api/v1/payments`);
+      expect(body).toEqual({ userId: 'user-1', amount: { amount: '10.00', currency: 'USD' } });
+      expect(opts.headers['Idempotency-Key']).toBe('idem-1');
     });
   });
 
@@ -64,15 +68,15 @@ describe('PaymentAdapter', () => {
         idempotencyKey: 'idem-1',
         createdAt: new Date().toISOString(),
       };
+      httpGet.mockReturnValue(of(mockPayment));
 
       adapter.getById('pay-1').subscribe((payment) => {
         expect(payment.id).toBe('pay-1');
         expect(payment.status).toBe('COMPLETED');
       });
 
-      const req = httpMock.expectOne(`${environment.apiGateway}/api/v1/payments/pay-1`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockPayment);
+      expect(httpGet).toHaveBeenCalledOnce();
+      expect(httpGet.mock.calls[0][0]).toBe(`${environment.apiGateway}/api/v1/payments/pay-1`);
     });
   });
 
@@ -84,17 +88,17 @@ describe('PaymentAdapter', () => {
         page: 0,
         size: 20,
       };
+      httpGet.mockReturnValue(of(mockResponse));
 
       adapter.list(0, 20).subscribe((response) => {
         expect(response.total).toBe(0);
       });
 
-      const req = httpMock.expectOne(
-        (r) => r.url === `${environment.apiGateway}/api/v1/payments`
-      );
-      expect(req.request.params.get('page')).toBe('0');
-      expect(req.request.params.get('size')).toBe('20');
-      req.flush(mockResponse);
+      expect(httpGet).toHaveBeenCalledOnce();
+      const [url, opts] = httpGet.mock.calls[0];
+      expect(url).toBe(`${environment.apiGateway}/api/v1/payments`);
+      expect(opts.params.get('page')).toBe('0');
+      expect(opts.params.get('size')).toBe('20');
     });
   });
 });

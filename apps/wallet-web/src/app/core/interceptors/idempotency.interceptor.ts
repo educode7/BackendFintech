@@ -3,24 +3,26 @@ import { inject } from '@angular/core';
 import { LoggerService } from '@core/infrastructure/logger.service';
 
 /**
- * Idempotency interceptor.
- * Generates and attaches Idempotency-Key for state-changing requests (POST, PATCH, PUT).
+ * Idempotency interceptor — preserves an existing `Idempotency-Key` header.
+ *
+ * The key is generated upstream (store) and travels with the request
+ * through the adapter. This interceptor ensures it is NOT stripped by
+ * Angular's HttpHandler chain. It does **not** generate or overwrite keys.
+ *
+ * Requests without a key pass through untouched.
  */
 export const idempotencyInterceptor: HttpInterceptorFn = (req, next) => {
-  if (req.method === 'GET' || req.method === 'DELETE' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+  if (!req.headers.has('Idempotency-Key')) {
     return next(req);
   }
 
-  const idempotencyKey = crypto.randomUUID();
-  const cloned = req.clone({
-    setHeaders: { 'Idempotency-Key': idempotencyKey },
-  });
-
   const logger = inject(LoggerService);
-  logger.debug('Attached Idempotency-Key', 'IdempotencyInterceptor', {
+  logger.debug('Preserved Idempotency-Key', 'IdempotencyInterceptor', {
     method: req.method,
     url: req.url,
   });
 
-  return next(cloned);
+  return next(req.clone({
+    setHeaders: { 'Idempotency-Key': req.headers.get('Idempotency-Key')! },
+  }));
 };

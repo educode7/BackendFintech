@@ -1,6 +1,4 @@
-import { TestBed } from '@angular/core/testing';
 import { PaymentStore } from './payment.store';
-import { PaymentAdapter } from '../../infrastructure/payment.adapter';
 import { of, throwError } from 'rxjs';
 
 describe('PaymentStore', () => {
@@ -17,15 +15,7 @@ describe('PaymentStore', () => {
       getById: vi.fn(),
       process: vi.fn(),
     };
-
-    TestBed.configureTestingModule({
-      providers: [
-        PaymentStore,
-        { provide: PaymentAdapter, useValue: adapterSpy },
-      ],
-    });
-
-    store = TestBed.inject(PaymentStore);
+    store = new PaymentStore(adapterSpy as never);
   });
 
   it('should be created', () => {
