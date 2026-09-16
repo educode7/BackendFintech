@@ -57,6 +57,9 @@ wallet:
       notification-service:
         url: http://localhost:8083
         path: /api/v1/notifications
+      auth-service:
+        url: http://localhost:8084
+        path: /api/v1/auth
     rate-limit:
       replenish-rate: 100
       burst-capacity: 200

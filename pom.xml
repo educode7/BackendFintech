@@ -17,6 +17,7 @@
         <module>payment-service-quarkus</module>
         <module>account-service-quarkus</module>
         <module>notification-service-quarkus</module>
+        <module>auth-service-quarkus</module>
     </modules>
 
     <properties>
