@@ -1,12 +1,12 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, of, tap, catchError, shareReplay } from 'rxjs';
 
-interface JwtPayload {
+export interface UserInfo {
   sub: string;
-  exp: number;
-  iat: number;
-  [key: string]: unknown;
+  email: string;
+  roles: string[];
+  expiresAt: number;
 }
 
 interface RefreshResponse {
@@ -15,20 +15,31 @@ interface RefreshResponse {
   expires_in: number;
 }
 
-const REFRESH_TOKEN_KEY = 'wallet_refresh_token';
 const AUTH_SERVICE_URL = '/api/v1/auth';
 
 /**
- * In-memory auth token service.
- * Access tokens are stored in memory only.
- * Refresh tokens are stored in sessionStorage for cross-reload persistence.
+ * Auth service — manages access tokens and user identity.
+ *
+ * Token strategy:
+ * - Access token: in-memory only (lost on page reload — user re-authenticates)
+ * - Refresh token: HttpOnly Secure SameSite=Strict cookie (managed by backend)
+ *
+ * Identity: fetched from GET /auth/me (frontend cannot decode JWT).
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly http = inject(HttpClient);
+
+  /** In-memory access token */
   private token: string | null = null;
+
+  /** Cached user identity (null = not fetched yet) */
+  private userInfo: UserInfo | null = null;
+
+  /** In-flight refresh request (coalesces concurrent calls) */
   private refreshInProgress$: Observable<RefreshResponse> | null = null;
 
-  constructor(private http: HttpClient) {}
+  // ─── Token management ────────────────────────────────────
 
   setToken(token: string): void {
     this.token = token;
@@ -40,27 +51,53 @@ export class AuthService {
 
   clearToken(): void {
     this.token = null;
-    this.clearRefreshToken();
+    this.userInfo = null;
   }
 
+  /**
+   * Check if the user is authenticated.
+   * Uses cached user identity when available, falls back to local JWT expiry check.
+   */
   isAuthenticated(): boolean {
+    // Fast path: cached identity exists and access token is present
+    if (this.userInfo && this.token) {
+      return this.userInfo.expiresAt * 1000 > Date.now();
+    }
+
+    // Fallback: decode JWT locally (before /auth/me has been called)
     if (!this.token) return false;
     return !this.isTokenExpired(this.token);
   }
 
-  // --- Refresh token methods ---
+  // ─── User identity ───────────────────────────────────────
 
-  setRefreshToken(token: string): void {
-    sessionStorage.setItem(REFRESH_TOKEN_KEY, token);
+  /**
+   * Fetch the current user's identity from the backend.
+   * The access token is attached automatically by the auth interceptor.
+   */
+  getUserInfo(): Observable<UserInfo> {
+    if (this.userInfo) {
+      return of(this.userInfo);
+    }
+
+    return this.http.get<UserInfo>(`${AUTH_SERVICE_URL}/me`).pipe(
+      tap((info) => (this.userInfo = info)),
+      catchError((err) => {
+        // 401 means the access token is invalid — clear everything
+        if (err.status === 401) {
+          this.clearToken();
+        }
+        throw err;
+      })
+    );
   }
 
-  getRefreshToken(): string | null {
-    return sessionStorage.getItem(REFRESH_TOKEN_KEY);
+  /** Get cached user info without making an HTTP call */
+  getCachedUserInfo(): UserInfo | null {
+    return this.userInfo;
   }
 
-  clearRefreshToken(): void {
-    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
-  }
+  // ─── Token expiry helpers ────────────────────────────────
 
   isTokenExpiringSoon(thresholdSeconds: number): boolean {
     if (!this.token) return false;
@@ -74,24 +111,28 @@ export class AuthService {
     }
   }
 
+  /**
+   * Refresh the access token using the HttpOnly refresh_token cookie.
+   *
+   * The cookie is sent automatically by the browser — no need to read it from
+   * sessionStorage or include it in the request body.
+   *
+   * Coalesces concurrent refresh attempts into a single request.
+   */
   refreshAccessToken(): Observable<RefreshResponse> {
-    // Coalesce concurrent refresh attempts into a single request
     if (this.refreshInProgress$) {
       return this.refreshInProgress$;
     }
 
-    const refreshToken = this.getRefreshToken();
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
     this.refreshInProgress$ = this.http
-      .post<RefreshResponse>(`${AUTH_SERVICE_URL}/refresh`, { refresh_token: refreshToken })
+      .post<RefreshResponse>(`${AUTH_SERVICE_URL}/refresh`, null, {
+        withCredentials: true,
+      })
       .pipe(
         tap({
           next: (response) => {
             this.setToken(response.access_token);
-            this.setRefreshToken(response.refresh_token);
+            // Note: new refresh_token cookie is set by the backend via Set-Cookie header
           },
           error: () => {
             this.clearToken();
@@ -99,13 +140,15 @@ export class AuthService {
           complete: () => {
             this.refreshInProgress$ = null;
           },
-        })
+        }),
+        // shareReplay makes the Observable hot — concurrent subscribers share one HTTP request
+        shareReplay({ bufferSize: 1, refCount: false }),
       );
 
     return this.refreshInProgress$;
   }
 
-  // --- Private helpers ---
+  // ─── Private helpers ─────────────────────────────────────
 
   private isTokenExpired(token: string): boolean {
     try {
@@ -118,12 +161,12 @@ export class AuthService {
     }
   }
 
-  private decodeJwtPayload(token: string): JwtPayload | null {
+  private decodeJwtPayload(token: string): { exp?: number; sub?: string } | null {
     try {
       const parts = token.split('.');
       if (parts.length !== 3) return null;
       const payload = atob(parts[1]);
-      return JSON.parse(payload) as JwtPayload;
+      return JSON.parse(payload);
     } catch {
       return null;
     }

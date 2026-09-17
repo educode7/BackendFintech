@@ -1,3 +1,7 @@
+export interface MfaSetupRequest {
+  // POST /auth/mfa/setup — empty body, auth via Bearer token
+}
+
 export interface MfaSetupResponse {
   qr_code: string;
   secret: string;
@@ -17,4 +21,8 @@ export interface MfaVerifyResponse {
 
 export interface MfaDisableRequest {
   code: string;
+}
+
+export interface MfaDisableResponse {
+  // 204 No Content — no body
 }

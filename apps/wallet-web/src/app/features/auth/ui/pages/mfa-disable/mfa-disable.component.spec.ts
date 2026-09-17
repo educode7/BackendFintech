@@ -1,74 +1,92 @@
 import '@angular/compiler';
 import { TestBed } from '@angular/core/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
-import { Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { MfaDisableComponent } from './mfa-disable.component';
-import { AuthService } from '@core/infrastructure/auth.service';
-
-function createValidToken(): string {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const futureExp = Math.floor(Date.now() / 1000) + 3600;
-  const payload = btoa(JSON.stringify({ sub: 'user-1', exp: futureExp, iat: futureExp - 3600 }));
-  return `${header}.${payload}.sig`;
-}
+import { AuthStore } from '../../../application/stores/auth.store';
 
 describe('MfaDisableComponent', () => {
-  let component: MfaDisableComponent;
-  let httpMock: HttpTestingController;
-  let router: Router;
+  let storeSpy: {
+    disableLoading: ReturnType<typeof vi.fn>;
+    disableError: ReturnType<typeof vi.fn>;
+    disableSuccess: ReturnType<typeof vi.fn>;
+    disableMfa: ReturnType<typeof vi.fn>;
+    clearDisableError: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(async () => {
+    storeSpy = {
+      disableLoading: vi.fn().mockReturnValue(false),
+      disableError: vi.fn().mockReturnValue(null),
+      disableSuccess: vi.fn().mockReturnValue(false),
+      disableMfa: vi.fn(),
+      clearDisableError: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, MfaDisableComponent],
+      imports: [MfaDisableComponent],
       providers: [
-        AuthService,
-        { provide: Router, useValue: { navigate: vi.fn() } },
+        provideRouter([]),
+        { provide: AuthStore, useValue: storeSpy },
       ],
     }).compileComponents();
-
-    const auth = TestBed.inject(AuthService);
-    auth.setToken(createValidToken());
-
-    httpMock = TestBed.inject(HttpTestingController);
-    router = TestBed.inject(Router);
-    component = TestBed.inject(MfaDisableComponent);
-  });
-
-  afterEach(() => {
-    httpMock.verify();
   });
 
   it('should create', () => {
-    expect(component).toBeTruthy();
+    const fixture = TestBed.createComponent(MfaDisableComponent);
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should disable MFA and show success', () => {
-    component.code = '123456';
-    component.disableMfa();
+  it('should call store.disableMfa with code', () => {
+    const fixture = TestBed.createComponent(MfaDisableComponent);
+    fixture.detectChanges();
 
-    const req = httpMock.expectOne('/api/v1/auth/mfa/disable');
-    expect(req.request.method).toBe('POST');
-    req.flush(null, { status: 204, statusText: 'No Content' });
-
-    expect(component.success).toBeTrue();
+    fixture.componentInstance.code = '123456';
+    fixture.componentInstance.disableMfa();
+    expect(storeSpy.disableMfa).toHaveBeenCalledWith('123456');
   });
 
-  it('should show error on disable failure', () => {
-    component.code = '000000';
-    component.disableMfa();
+  it('should not call store.disableMfa with incomplete code', () => {
+    const fixture = TestBed.createComponent(MfaDisableComponent);
+    fixture.detectChanges();
 
-    const req = httpMock.expectOne('/api/v1/auth/mfa/disable');
-    req.flush({ message: 'Invalid code' }, { status: 400, statusText: 'Bad Request' });
-
-    expect(component.errorMessage).toBe('Invalid code');
-    expect(component.success).toBeFalse();
+    fixture.componentInstance.code = '12345';
+    fixture.componentInstance.disableMfa();
+    expect(storeSpy.disableMfa).not.toHaveBeenCalled();
   });
 
-  it('should navigate to home on cancel', () => {
-    component.cancel();
-    expect(router.navigate).toHaveBeenCalledWith(['/']);
+  it('should render success message when disableSuccess is true', () => {
+    storeSpy.disableSuccess.mockReturnValue(true);
+    const fixture = TestBed.createComponent(MfaDisableComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.success-message')).toBeTruthy();
+    expect(compiled.querySelector('.success-message p')?.textContent).toContain('MFA has been disabled');
+  });
+
+  it('should render warning and form when not success', () => {
+    const fixture = TestBed.createComponent(MfaDisableComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.warning-box')).toBeTruthy();
+    expect(compiled.querySelector('.verify-section')).toBeTruthy();
+    expect(compiled.querySelector('.btn-danger')?.textContent).toContain('Disable MFA');
+  });
+
+  it('should render error message', () => {
+    storeSpy.disableError.mockReturnValue('Invalid code');
+    const fixture = TestBed.createComponent(MfaDisableComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.field-error')?.textContent).toContain('Invalid code');
+  });
+
+  it('should disable button while loading', () => {
+    storeSpy.disableLoading.mockReturnValue(true);
+    const fixture = TestBed.createComponent(MfaDisableComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const btn = compiled.querySelector('.btn-danger') as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    expect(btn.textContent).toContain('Disabling...');
   });
 });

@@ -1,21 +1,17 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { AuthService } from '@core/infrastructure/auth.service';
-import { NgClass } from '@angular/common';
+import { AuthStore } from '../../../application/stores/auth.store';
 import { FormsModule } from '@angular/forms';
-
-const MFA_API = '/api/v1/auth/mfa';
 
 @Component({
   selector: 'app-mfa-disable',
   standalone: true,
-  imports: [NgClass, FormsModule],
+  imports: [FormsModule],
   template: `
     <div class="mfa-container">
       <h2>Disable Two-Factor Authentication</h2>
 
-      @if (success) {
+      @if (store.disableSuccess()) {
         <div class="success-message">
           <p>✅ MFA has been disabled. Redirecting to settings...</p>
         </div>
@@ -33,16 +29,21 @@ const MFA_API = '/api/v1/auth/mfa';
             pattern="[0-9]{6}"
             placeholder="000000"
             class="code-input"
-            [class.input-error]="!!errorMessage"
-            (input)="errorMessage = ''"
+            [class.input-error]="!!store.disableError()"
+            [attr.aria-invalid]="!!store.disableError()"
+            [attr.aria-describedby]="store.disableError() ? 'disable-error-msg' : null"
+            (input)="store.clearDisableError()"
             autofocus
           />
-          @if (errorMessage) {
-            <div class="field-error">{{ errorMessage }}</div>
+          @if (store.disableError()) {
+            <div id="disable-error-msg" class="field-error" role="alert" aria-live="assertive">{{ store.disableError() }}</div>
           }
-          <button class="btn btn-danger" (click)="disableMfa()" [disabled]="code.length !== 6 || submitting">
-            {{ submitting ? 'Disabling...' : 'Disable MFA' }}
+          <button class="btn btn-danger" (click)="disableMfa()" [disabled]="code.length !== 6 || store.disableLoading()">
+            {{ store.disableLoading() ? 'Disabling...' : 'Disable MFA' }}
           </button>
+          @if (code.length !== 6 && !store.disableLoading()) {
+            <p class="helper-text">Enter your current TOTP code to confirm</p>
+          }
           <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
         </div>
       }
@@ -58,48 +59,41 @@ const MFA_API = '/api/v1/auth/mfa';
     .verify-section { display: flex; flex-direction: column; gap: 0.75rem; }
     .verify-section label { color: #374151; font-weight: 500; }
     .code-input { font-size: 1.5rem; letter-spacing: 0.3em; text-align: center; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; width: 100%; font-family: monospace; }
-    .code-input:focus { border-color: #dc2626; outline: none; }
+    .code-input:focus-visible { border-color: #dc2626; outline: 2px solid #dc2626; outline-offset: 2px; }
+    .code-input:focus:not(:focus-visible) { border-color: #dc2626; outline: none; }
     .input-error { border-color: #dc2626; }
     .field-error { color: #dc2626; font-size: 0.875rem; }
     .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; }
     .btn-danger { background: #dc2626; color: white; }
     .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-secondary { background: #e5e7eb; color: #374151; margin-top: 0.5rem; }
+    .helper-text { color: #6b7280; font-size: 0.8rem; margin: 0; }
   `],
 })
-export class MfaDisableComponent {
-  private readonly http = inject(HttpClient);
-  private readonly auth = inject(AuthService);
+export class MfaDisableComponent implements OnDestroy {
   private readonly router = inject(Router);
+  readonly store = inject(AuthStore);
 
   code = '';
-  errorMessage = '';
-  submitting = false;
-  success = false;
+  private redirectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private checkInterval: ReturnType<typeof setInterval> | null = null;
+
+  ngOnDestroy(): void {
+    if (this.redirectTimeout) clearTimeout(this.redirectTimeout);
+    if (this.checkInterval) clearInterval(this.checkInterval);
+  }
 
   disableMfa(): void {
     if (this.code.length !== 6) return;
+    this.store.disableMfa(this.code);
 
-    this.submitting = true;
-    this.errorMessage = '';
-
-    const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` });
-
-    this.http
-      .request('POST', `${MFA_API}/disable`, { body: { code: this.code }, headers, observe: 'response' })
-      .subscribe({
-        next: (res) => {
-          this.submitting = false;
-          if (res.status === 204) {
-            this.success = true;
-            setTimeout(() => this.router.navigate(['/']), 3000);
-          }
-        },
-        error: (err) => {
-          this.submitting = false;
-          this.errorMessage = err.error?.message || 'Failed to disable MFA. Check your code.';
-        },
-      });
+    this.checkInterval = setInterval(() => {
+      if (this.store.disableSuccess()) {
+        if (this.checkInterval) clearInterval(this.checkInterval);
+        this.checkInterval = null;
+        this.redirectTimeout = setTimeout(() => this.router.navigate(['/']), 3000);
+      }
+    }, 50);
   }
 
   cancel(): void {

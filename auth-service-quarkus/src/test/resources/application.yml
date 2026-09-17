@@ -1,0 +1,21 @@
+quarkus:
+  oidc:
+    credentials:
+      secret: test-secret-for-unit-tests
+    token:
+      issuer: http://localhost:8180/realms/wallet
+    # Disable remote OIDC metadata/public-key fetch in tests — @TestSecurity creates local JWTs
+    application-type: service
+
+  # Disable features that need external services in tests
+  opentelemetry:
+    enabled: false
+
+  smallrye-health:
+    expose:
+      enabled: false
+
+  log:
+    level: WARN
+    category:
+      "com.wallet.auth": INFO

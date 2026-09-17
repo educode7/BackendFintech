@@ -1,36 +1,31 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { AuthService } from '@core/infrastructure/auth.service';
-import { MfaSetupResponse } from '../../../domain/mfa.model';
-import { NgClass } from '@angular/common';
+import { AuthStore } from '../../../application/stores/auth.store';
 import { FormsModule } from '@angular/forms';
-
-const MFA_API = '/api/v1/auth/mfa';
 
 @Component({
   selector: 'app-mfa-setup',
   standalone: true,
-  imports: [NgClass, FormsModule],
+  imports: [FormsModule],
   template: `
     <div class="mfa-container">
       <h2>Set Up Two-Factor Authentication</h2>
 
-      @if (loading) {
+      @if (store.setupLoading()) {
         <div class="loading">Setting up MFA...</div>
-      } @else if (error) {
-        <div class="error">{{ error }}</div>
+      } @else if (store.setupError()) {
+        <div class="error" role="alert" aria-live="assertive">{{ store.setupError() }}</div>
         <button class="btn" (click)="initSetup()">Retry</button>
-      } @else if (setupData && !setupComplete) {
+      } @else if (store.setupData() && !store.setupComplete()) {
         <p class="instruction">
           Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):
         </p>
         <div class="qr-wrapper">
-          <img [src]="setupData.qr_code" alt="MFA QR Code" class="qr-image" />
+          <img [src]="store.setupData()!.qr_code" alt="MFA QR Code" class="qr-image" />
         </div>
         <div class="secret-box">
           <span class="label">Manual entry key:</span>
-          <code>{{ setupData.secret }}</code>
+          <code>{{ store.setupData()!.secret }}</code>
         </div>
 
         <div class="verify-section">
@@ -42,22 +37,27 @@ const MFA_API = '/api/v1/auth/mfa';
             pattern="[0-9]{6}"
             placeholder="000000"
             class="code-input"
-            [class.input-error]="verifyError"
-            (input)="verifyError = ''"
+            [class.input-error]="!!store.verifyError()"
+            [attr.aria-invalid]="!!store.verifyError()"
+            [attr.aria-describedby]="store.verifyError() ? 'setup-error-msg' : null"
+            (input)="store.clearVerifyError()"
           />
-          @if (verifyError) {
-            <div class="field-error">{{ verifyError }}</div>
+          @if (store.verifyError()) {
+            <div id="setup-error-msg" class="field-error" role="alert" aria-live="assertive">{{ store.verifyError() }}</div>
           }
-          <button class="btn btn-primary" (click)="verifySetup()" [disabled]="verifyCode.length !== 6 || verifying">
-            {{ verifying ? 'Verifying...' : 'Verify & Activate' }}
+          <button class="btn btn-primary" (click)="verifySetup()" [disabled]="verifyCode.length !== 6 || store.verifying()">
+            {{ store.verifying() ? 'Verifying...' : 'Verify & Activate' }}
           </button>
+          @if (verifyCode.length !== 6 && !store.verifying()) {
+            <p class="helper-text">Enter all 6 digits to enable verification</p>
+          }
         </div>
-      } @else if (setupComplete) {
+      } @else if (store.setupComplete()) {
         <div class="success">
           <h3>✅ MFA Enabled Successfully</h3>
           <p>Save these recovery codes. They will not be shown again:</p>
           <div class="recovery-codes">
-            @for (code of setupData!.recovery_codes; track code) {
+            @for (code of store.setupData()!.recovery_codes; track code) {
               <code class="recovery-code">{{ code }}</code>
             }
           </div>
@@ -86,7 +86,8 @@ const MFA_API = '/api/v1/auth/mfa';
     .verify-section { display: flex; flex-direction: column; gap: 0.75rem; }
     .verify-section label { color: #374151; font-weight: 500; }
     .code-input { font-size: 1.5rem; letter-spacing: 0.3em; text-align: center; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; width: 100%; font-family: monospace; }
-    .code-input:focus { border-color: #3b82f6; outline: none; }
+    .code-input:focus-visible { border-color: #3b82f6; outline: 2px solid #3b82f6; outline-offset: 2px; }
+    .code-input:focus:not(:focus-visible) { border-color: #3b82f6; outline: none; }
     .input-error { border-color: #dc2626; }
     .field-error { color: #dc2626; font-size: 0.875rem; }
     .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; }
@@ -97,77 +98,33 @@ const MFA_API = '/api/v1/auth/mfa';
     .recovery-codes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin: 1rem 0; }
     .recovery-code { background: #f3f4f6; padding: 0.5rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.9rem; text-align: center; }
     .warning { color: #d97706; font-size: 0.875rem; margin: 1rem 0; }
+    .helper-text { color: #6b7280; font-size: 0.8rem; margin: 0; }
   `],
 })
-export class MfaSetupComponent implements OnInit, OnDestroy {
-  private readonly http = inject(HttpClient);
-  private readonly auth = inject(AuthService);
+export class MfaSetupComponent implements OnInit {
   private readonly router = inject(Router);
+  readonly store = inject(AuthStore);
 
-  setupData: MfaSetupResponse | null = null;
-  loading = true;
-  error = '';
   verifyCode = '';
-  verifyError = '';
-  verifying = false;
-  setupComplete = false;
   copied = false;
 
   ngOnInit(): void {
-    this.initSetup();
-  }
-
-  ngOnDestroy(): void {
-    // Cleanup handled by Angular
+    this.store.initSetup();
   }
 
   initSetup(): void {
-    this.loading = true;
-    this.error = '';
-    this.setupData = null;
-
-    const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` });
-
-    this.http.post<MfaSetupResponse>(`${MFA_API}/setup`, {}, { headers }).subscribe({
-      next: (data) => {
-        this.setupData = data;
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = err.error?.message || 'Failed to initiate MFA setup';
-        this.loading = false;
-      },
-    });
+    this.store.initSetup();
   }
 
   verifySetup(): void {
     if (this.verifyCode.length !== 6) return;
-
-    this.verifying = true;
-    this.verifyError = '';
-
-    const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` });
-    const body = { code: this.verifyCode };
-
-    this.http.post<{ verified: boolean }>(`${MFA_API}/verify`, body, { headers }).subscribe({
-      next: (res) => {
-        this.verifying = false;
-        if (res.verified) {
-          this.setupComplete = true;
-        } else {
-          this.verifyError = 'Invalid code. Please try again.';
-        }
-      },
-      error: (err) => {
-        this.verifying = false;
-        this.verifyError = err.error?.message || 'Verification failed. Try again.';
-      },
-    });
+    this.store.verifySetup(this.verifyCode);
   }
 
   copyRecoveryCodes(): void {
-    if (!this.setupData?.recovery_codes) return;
-    const text = this.setupData.recovery_codes.join('\n');
+    const data = this.store.setupData();
+    if (!data?.recovery_codes) return;
+    const text = data.recovery_codes.join('\n');
     navigator.clipboard.writeText(text).then(() => {
       this.copied = true;
       setTimeout(() => (this.copied = false), 2000);

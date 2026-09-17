@@ -11,6 +11,7 @@ import com.wallet.auth.interfaces.rest.dto.MfaVerifyRequest;
 import com.wallet.auth.interfaces.rest.dto.MfaVerifyResponse;
 
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -24,7 +25,6 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
-import org.eclipse.microprofile.jwt.JsonWebToken;
 
 /**
  * REST adapter: MFA/2FA endpoints.
@@ -44,7 +44,7 @@ public class MfaResource {
     private final MfaDisableService disableService;
 
     @Inject
-    JsonWebToken jwt;
+    SecurityIdentity identity;
 
     @Inject
     public MfaResource(MfaSetupService setupService,
@@ -59,7 +59,7 @@ public class MfaResource {
     @Path("/setup")
     @Operation(summary = "Initiate MFA setup — returns QR code, secret, and recovery codes")
     public Uni<MfaSetupResponse> setup() {
-        String userId = jwt.getSubject();
+        String userId = identity.getPrincipal().getName();
         return setupService.setup(userId)
                 .map(this::toSetupResponse);
     }
@@ -68,7 +68,7 @@ public class MfaResource {
     @Path("/verify")
     @Operation(summary = "Verify a TOTP code")
     public Uni<MfaVerifyResponse> verify(@Valid MfaVerifyRequest request) {
-        String userId = jwt.getSubject();
+        String userId = identity.getPrincipal().getName();
         return verificationService.verify(userId, request.code())
                 .map(this::toVerifyResponse);
     }
@@ -77,7 +77,7 @@ public class MfaResource {
     @Path("/disable")
     @Operation(summary = "Disable MFA — requires valid TOTP code for confirmation")
     public Uni<Response> disable(@Valid MfaDisableRequest request) {
-        String userId = jwt.getSubject();
+        String userId = identity.getPrincipal().getName();
         return disableService.disable(userId, request.code())
                 .map(ignore -> Response.noContent().build());
     }
