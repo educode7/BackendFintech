@@ -1,7 +1,10 @@
+name: wallet
+
 services:
 
   # ─────────────────────────────── Postgres ───────────────────────────────
   postgres:
+    name: wallet-postgres
     image: postgres:16-alpine
     container_name: wallet-postgres
     environment:
@@ -24,6 +27,7 @@ services:
 
   # ─────────────────────────────── Redis ───────────────────────────────
   redis:
+    name: wallet-redis
     image: redis:7-alpine
     container_name: wallet-redis
     command: ["redis-server", "--appendonly", "yes"]
@@ -42,6 +46,7 @@ services:
 
   # ─────────────────────────────── Kafka (KRaft, no Zookeeper) ───────────────────────────────
   kafka:
+    name: wallet-kafka
     image: bitnami/kafka:3.7
     container_name: wallet-kafka
     ports:
@@ -72,6 +77,7 @@ services:
 
   # ─────────────────────────────── Keycloak ───────────────────────────────
   keycloak:
+    name: wallet-keycloak
     image: quay.io/keycloak/keycloak:25.0
     container_name: wallet-keycloak
     command: start-dev --import-realm
@@ -96,6 +102,7 @@ services:
 
   # ─────────────────────────────── Config Server ───────────────────────────────
   config-service:
+    name: wallet-config-service
     build:
       context: .
       dockerfile: config-service/Dockerfile
@@ -119,13 +126,14 @@ services:
 
   # ─────────────────────────────── Observability ───────────────────────────────
   otel-collector:
+    name: wallet-otel-collector
     image: otel/opentelemetry-collector-contrib:0.112.0
     container_name: wallet-otel-collector
     command: ["--config=/etc/otelcol/config.yml"]
     ports:
       - "4317:4317"   # OTLP gRPC
       - "4318:4318"   # OTLP HTTP
-      - "8888:8888"   # Collector metrics
+      - "8889:8888"   # Collector metrics (8889 to avoid conflict with config-service)
     volumes:
       - ./otel-collector-config.yml:/etc/otelcol/config.yml:ro
     networks:
@@ -133,6 +141,7 @@ services:
     restart: unless-stopped
 
   jaeger:
+    name: wallet-jaeger
     image: jaegertracing/all-in-one:1.62
     container_name: wallet-jaeger
     environment:
@@ -145,6 +154,7 @@ services:
     restart: unless-stopped
 
   prometheus:
+    name: wallet-prometheus
     image: prom/prometheus:v2.55.1
     container_name: wallet-prometheus
     ports:
@@ -153,15 +163,17 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     depends_on:
-      - api-gateway-quarkus
-      - payment-service-quarkus
-      - account-service-quarkus
-      - notification-service-quarkus
+      - api-gateway
+      - payment-service
+      - account-service
+      - notification-service
+      - auth-service
     networks:
       - wallet-net
     restart: unless-stopped
 
   grafana:
+    name: wallet-grafana
     image: grafana/grafana:11.3.0
     container_name: wallet-grafana
     ports:
@@ -180,7 +192,8 @@ services:
     restart: unless-stopped
 
   # ─────────────────────────────── Application services (Quarkus) ───────────────────────────────
-  api-gateway-quarkus:
+  api-gateway:
+    name: wallet-api-gateway
     build:
       context: .
       dockerfile: api-gateway-quarkus/Dockerfile
@@ -205,7 +218,8 @@ services:
       - wallet-net
     restart: unless-stopped
 
-  payment-service-quarkus:
+  payment-service:
+    name: wallet-payment-service
     build:
       context: .
       dockerfile: payment-service-quarkus/Dockerfile
@@ -229,7 +243,8 @@ services:
       - wallet-net
     restart: unless-stopped
 
-  account-service-quarkus:
+  account-service:
+    name: wallet-account-service
     build:
       context: .
       dockerfile: account-service-quarkus/Dockerfile
@@ -253,7 +268,8 @@ services:
       - wallet-net
     restart: unless-stopped
 
-  notification-service-quarkus:
+  notification-service:
+    name: wallet-notification-service
     build:
       context: .
       dockerfile: notification-service-quarkus/Dockerfile
@@ -271,6 +287,30 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+    networks:
+      - wallet-net
+    restart: unless-stopped
+
+  auth-service:
+    name: wallet-auth-service
+    build:
+      context: .
+      dockerfile: auth-service-quarkus/Dockerfile
+    container_name: wallet-auth-service
+    ports:
+      - "8084:8084"
+    environment:
+      QUARKUS_PROFILE: docker
+      QUARKUS_CONFIG_LOCATIONS: "optional:classpath:/application.yml,optional:classpath:/application-docker.yml"
+    depends_on:
+      config-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
     networks:
       - wallet-net

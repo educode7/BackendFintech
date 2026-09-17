@@ -16,8 +16,10 @@
     gateway:
       routes:
         payment-service:
-          url: http://payment-service-quarkus:8081
+          url: http://payment-service:8081
         account-service:
-          url: http://account-service-quarkus:8082
+          url: http://account-service:8082
         notification-service:
-          url: http://notification-service-quarkus:8083
+          url: http://notification-service:8083
+        auth-service:
+          url: http://auth-service:8084
