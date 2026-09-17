@@ -57,7 +57,7 @@ const MFA_API = '/api/v1/auth/mfa';
           <h3>✅ MFA Enabled Successfully</h3>
           <p>Save these recovery codes. They will not be shown again:</p>
           <div class="recovery-codes">
-            @for (code of setupData!.recoveryCodes; track code) {
+            @for (code of setupData!.recovery_codes; track code) {
               <code class="recovery-code">{{ code }}</code>
             }
           </div>
@@ -166,8 +166,8 @@ export class MfaSetupComponent implements OnInit, OnDestroy {
   }
 
   copyRecoveryCodes(): void {
-    if (!this.setupData?.recoveryCodes) return;
-    const text = this.setupData.recoveryCodes.join('\n');
+    if (!this.setupData?.recovery_codes) return;
+    const text = this.setupData.recovery_codes.join('\n');
     navigator.clipboard.writeText(text).then(() => {
       this.copied = true;
       setTimeout(() => (this.copied = false), 2000);

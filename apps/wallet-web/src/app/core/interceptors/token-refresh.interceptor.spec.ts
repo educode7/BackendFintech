@@ -1,3 +1,4 @@
+import '@angular/compiler';
 import { TestBed } from '@angular/core/testing';
 import {
   HttpClient,
@@ -93,7 +94,7 @@ describe('tokenRefreshInterceptor', () => {
 
   it('should redirect to login on refresh failure', () => {
     auth.setToken(createValidToken());
-    const consoleSpy = spyOn(console, 'error');
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     http.get('/api/protected').subscribe({
       error: (err: HttpErrorResponse) => {

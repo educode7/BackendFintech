@@ -1,3 +1,4 @@
+import '@angular/compiler';
 import { TestBed } from '@angular/core/testing';
 import {
   HttpClientTestingModule,
@@ -24,7 +25,7 @@ describe('MfaDisableComponent', () => {
       imports: [HttpClientTestingModule, MfaDisableComponent],
       providers: [
         AuthService,
-        { provide: Router, useValue: { navigate: jasmine.createSpy('navigate') } },
+        { provide: Router, useValue: { navigate: vi.fn() } },
       ],
     }).compileComponents();
 
