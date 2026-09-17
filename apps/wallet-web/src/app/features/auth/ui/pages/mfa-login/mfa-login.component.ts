@@ -1,27 +1,22 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { AuthService } from '@core/infrastructure/auth.service';
-import { MfaVerifyResponse } from '../../../domain/mfa.model';
-import { NgClass } from '@angular/common';
+import { AuthStore } from '../../../application/stores/auth.store';
 import { FormsModule } from '@angular/forms';
 
-const MFA_API = '/api/v1/auth/mfa';
 const MAX_ATTEMPTS = 5;
-const LOCKOUT_SECONDS = 300;
 
 @Component({
   selector: 'app-mfa-login',
   standalone: true,
-  imports: [NgClass, FormsModule],
+  imports: [FormsModule],
   template: `
     <div class="mfa-container">
       <h2>Two-Factor Verification</h2>
       <p class="instruction">Enter the 6-digit code from your authenticator app.</p>
 
-      @if (locked) {
+      @if (store.locked()) {
         <div class="lockout">
-          <p>Too many failed attempts. Please wait {{ formatTime(remainingSeconds) }}.</p>
+          <p>Too many failed attempts. Please wait {{ formatTime(store.remainingSeconds()) }}.</p>
         </div>
       } @else {
         <div class="verify-section">
@@ -32,24 +27,29 @@ const LOCKOUT_SECONDS = 300;
             pattern="[0-9]{6}"
             placeholder="000000"
             class="code-input"
-            [class.input-error]="!!errorMessage"
-            (input)="errorMessage = ''"
-            [disabled]="locked"
+            [class.input-error]="!!store.verifyError()"
+            [attr.aria-invalid]="!!store.verifyError()"
+            [attr.aria-describedby]="store.verifyError() ? 'login-error-msg' : null"
+            (input)="store.clearVerifyError()"
+            [disabled]="store.locked()"
             autofocus
           />
-          @if (errorMessage) {
-            <div class="field-error">{{ errorMessage }}</div>
+          @if (store.verifyError()) {
+            <div id="login-error-msg" class="field-error" role="alert" aria-live="assertive">{{ store.verifyError() }}</div>
           }
           <div class="attempts-info">
-            {{ MAX_ATTEMPTS - attempts }} attempts remaining before lockout
+            {{ MAX_ATTEMPTS - store.attempts() }} attempts remaining before lockout
           </div>
           <button
             class="btn btn-primary"
             (click)="verify()"
-            [disabled]="code.length !== 6 || verifying"
+            [disabled]="code.length !== 6 || store.verifying()"
           >
-            {{ verifying ? 'Verifying...' : 'Verify' }}
+            {{ store.verifying() ? 'Verifying...' : 'Verify' }}
           </button>
+          @if (code.length !== 6 && !store.verifying()) {
+            <p class="helper-text">Enter all 6 digits to enable verification</p>
+          }
         </div>
       }
     </div>
@@ -60,7 +60,8 @@ const LOCKOUT_SECONDS = 300;
     .instruction { color: #6b7280; margin-bottom: 2rem; }
     .verify-section { display: flex; flex-direction: column; gap: 0.75rem; }
     .code-input { font-size: 2rem; letter-spacing: 0.4em; text-align: center; padding: 0.75rem; border: 2px solid #d1d5db; border-radius: 0.5rem; width: 100%; font-family: monospace; }
-    .code-input:focus { border-color: #3b82f6; outline: none; }
+    .code-input:focus-visible { border-color: #3b82f6; outline: 2px solid #3b82f6; outline-offset: 2px; }
+    .code-input:focus:not(:focus-visible) { border-color: #3b82f6; outline: none; }
     .input-error { border-color: #dc2626; }
     .field-error { color: #dc2626; font-size: 0.875rem; }
     .attempts-info { color: #9ca3af; font-size: 0.8rem; }
@@ -69,21 +70,16 @@ const LOCKOUT_SECONDS = 300;
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .lockout { background: #fef3c7; border: 1px solid #fbbf24; border-radius: 0.5rem; padding: 1.5rem; margin-top: 1rem; }
     .lockout p { color: #92400e; font-weight: 500; }
+    .helper-text { color: #9ca3af; font-size: 0.8rem; margin: 0; }
   `],
 })
 export class MfaLoginComponent implements OnInit, OnDestroy {
-  private readonly http = inject(HttpClient);
-  private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  readonly store = inject(AuthStore);
 
   readonly MAX_ATTEMPTS = MAX_ATTEMPTS;
 
   code = '';
-  errorMessage = '';
-  verifying = false;
-  attempts = 0;
-  locked = false;
-  remainingSeconds = 0;
   private timerInterval: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
@@ -97,29 +93,11 @@ export class MfaLoginComponent implements OnInit, OnDestroy {
   }
 
   verify(): void {
-    if (this.code.length !== 6 || this.locked) return;
+    if (this.code.length !== 6 || this.store.locked()) return;
 
-    this.verifying = true;
-    this.errorMessage = '';
-
-    const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` });
-
-    this.http
-      .post<MfaVerifyResponse>(`${MFA_API}/verify`, { code: this.code }, { headers })
-      .subscribe({
-        next: (res) => {
-          this.verifying = false;
-          if (res.verified) {
-            this.router.navigate(['/']);
-          } else {
-            this.handleFailure('Invalid code. Please try again.');
-          }
-        },
-        error: (err) => {
-          this.verifying = false;
-          this.handleFailure(err.error?.message || 'Verification failed.');
-        },
-      });
+    this.store.verifyLogin(this.code, {
+      onSuccess: () => this.router.navigate(['/']),
+    });
   }
 
   formatTime(seconds: number): string {
@@ -128,26 +106,16 @@ export class MfaLoginComponent implements OnInit, OnDestroy {
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
-  private handleFailure(message: string): void {
-    this.attempts++;
-    this.errorMessage = message;
-    this.code = '';
-
-    if (this.attempts >= MAX_ATTEMPTS) {
-      this.locked = true;
-      this.remainingSeconds = LOCKOUT_SECONDS;
-      this.startTimer();
-    }
-  }
-
   private startTimer(): void {
+    // Persist lockout end time for cross-reload survival
+    const lockoutUntil = Date.now() + this.store.remainingSeconds() * 1000;
+    sessionStorage.setItem('mfa_lockout_until', lockoutUntil.toString());
+
     this.timerInterval = setInterval(() => {
-      this.remainingSeconds--;
-      if (this.remainingSeconds <= 0) {
+      this.store.tickLockout();
+      if (!this.store.locked()) {
         if (this.timerInterval) clearInterval(this.timerInterval);
-        this.locked = false;
-        this.attempts = 0;
-        this.remainingSeconds = 0;
+        sessionStorage.removeItem('mfa_lockout_until');
       }
     }, 1000);
   }
@@ -155,11 +123,9 @@ export class MfaLoginComponent implements OnInit, OnDestroy {
   private startLockoutIfNeeded(): void {
     const lockoutUntil = sessionStorage.getItem('mfa_lockout_until');
     if (lockoutUntil) {
-      const remaining = Math.ceil((Number(lockoutUntil) - Date.now()) / 1000);
-      if (remaining > 0) {
-        this.locked = true;
-        this.remainingSeconds = remaining;
-        this.attempts = MAX_ATTEMPTS;
+      const timestamp = Number(lockoutUntil);
+      this.store.restoreLockout(timestamp);
+      if (this.store.locked()) {
         this.startTimer();
       } else {
         sessionStorage.removeItem('mfa_lockout_until');

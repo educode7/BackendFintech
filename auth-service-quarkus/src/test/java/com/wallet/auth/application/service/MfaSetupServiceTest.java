@@ -54,15 +54,22 @@ class MfaSetupServiceTest {
 
     @Test
     void shouldFailOnNullUserId() {
-        var failure = mfaSetupService.setup(null).await().failure();
-        assertTrue(failure.isPresent());
-        assertInstanceOf(IllegalArgumentException.class, failure.get());
+        try {
+            mfaSetupService.setup(null).await().indefinitely();
+            fail("Expected IllegalArgumentException");
+        } catch (Exception e) {
+            assertInstanceOf(IllegalArgumentException.class, e);
+        }
     }
 
     @Test
     void shouldFailOnBlankUserId() {
-        var failure = mfaSetupService.setup("  ").await().failure();
-        assertTrue(failure.isPresent());
+        try {
+            mfaSetupService.setup("  ").await().indefinitely();
+            fail("Expected exception");
+        } catch (Exception e) {
+            assertNotNull(e);
+        }
     }
 
     // --- Verification tests ---
@@ -92,9 +99,12 @@ class MfaSetupServiceTest {
 
     @Test
     void shouldFailVerificationOnNullCode() {
-        var failure = mfaVerificationService.verify("user-1", null).await().failure();
-        assertTrue(failure.isPresent());
-        assertInstanceOf(IllegalArgumentException.class, failure.get());
+        try {
+            mfaVerificationService.verify("user-1", null).await().indefinitely();
+            fail("Expected IllegalArgumentException");
+        } catch (Exception e) {
+            assertInstanceOf(IllegalArgumentException.class, e);
+        }
     }
 
     // --- Disable tests ---
@@ -113,14 +123,21 @@ class MfaSetupServiceTest {
         when(keycloakMfaPort.disableMfa("user-1", "bad"))
                 .thenReturn(Uni.createFrom().failure(new RuntimeException("Invalid code")));
 
-        var failure = mfaDisableService.disable("user-1", "bad").await().failure();
-        assertTrue(failure.isPresent());
+        try {
+            mfaDisableService.disable("user-1", "bad").await().indefinitely();
+            fail("Expected exception");
+        } catch (Exception e) {
+            assertNotNull(e);
+        }
     }
 
     @Test
     void shouldFailDisableOnNullCode() {
-        var failure = mfaDisableService.disable("user-1", null).await().failure();
-        assertTrue(failure.isPresent());
-        assertInstanceOf(IllegalArgumentException.class, failure.get());
+        try {
+            mfaDisableService.disable("user-1", null).await().indefinitely();
+            fail("Expected IllegalArgumentException");
+        } catch (Exception e) {
+            assertInstanceOf(IllegalArgumentException.class, e);
+        }
     }
 }

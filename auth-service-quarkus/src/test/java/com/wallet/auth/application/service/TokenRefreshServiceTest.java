@@ -43,17 +43,23 @@ class TokenRefreshServiceTest {
 
     @Test
     void shouldFailOnNullRefreshToken() {
-        var failure = tokenRefreshService.refresh(null).await().failure();
-        assertTrue(failure.isPresent());
-        assertInstanceOf(IllegalArgumentException.class, failure.get());
+        try {
+            tokenRefreshService.refresh(null).await().indefinitely();
+            fail("Expected IllegalArgumentException");
+        } catch (Exception e) {
+            assertInstanceOf(IllegalArgumentException.class, e);
+        }
         verify(keycloakTokenPort, never()).exchangeRefreshToken(any());
     }
 
     @Test
     void shouldFailOnBlankRefreshToken() {
-        var failure = tokenRefreshService.refresh("  ").await().failure();
-        assertTrue(failure.isPresent());
-        assertInstanceOf(IllegalArgumentException.class, failure.get());
+        try {
+            tokenRefreshService.refresh("  ").await().indefinitely();
+            fail("Expected IllegalArgumentException");
+        } catch (Exception e) {
+            assertInstanceOf(IllegalArgumentException.class, e);
+        }
     }
 
     @Test
@@ -61,8 +67,11 @@ class TokenRefreshServiceTest {
         when(keycloakTokenPort.exchangeRefreshToken("expired-token"))
                 .thenReturn(Uni.createFrom().failure(new RuntimeException("Token expired")));
 
-        var failure = tokenRefreshService.refresh("expired-token").await().failure();
-        assertTrue(failure.isPresent());
-        assertEquals("Token expired", failure.get().getMessage());
+        try {
+            tokenRefreshService.refresh("expired-token").await().indefinitely();
+            fail("Expected RuntimeException");
+        } catch (Exception e) {
+            assertEquals("Token expired", e.getMessage());
+        }
     }
 }

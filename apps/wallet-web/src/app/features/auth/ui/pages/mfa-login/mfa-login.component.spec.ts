@@ -1,88 +1,115 @@
 import '@angular/compiler';
 import { TestBed } from '@angular/core/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
-import { Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { MfaLoginComponent } from './mfa-login.component';
-import { AuthService } from '@core/infrastructure/auth.service';
-
-function createValidToken(): string {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const futureExp = Math.floor(Date.now() / 1000) + 3600;
-  const payload = btoa(JSON.stringify({ sub: 'user-1', exp: futureExp, iat: futureExp - 3600 }));
-  return `${header}.${payload}.sig`;
-}
+import { AuthStore } from '../../../application/stores/auth.store';
 
 describe('MfaLoginComponent', () => {
-  let component: MfaLoginComponent;
-  let httpMock: HttpTestingController;
-  let router: Router;
+  let storeSpy: {
+    locked: ReturnType<typeof vi.fn>;
+    remainingSeconds: ReturnType<typeof vi.fn>;
+    attempts: ReturnType<typeof vi.fn>;
+    verifying: ReturnType<typeof vi.fn>;
+    verifyError: ReturnType<typeof vi.fn>;
+    verifyLogin: ReturnType<typeof vi.fn>;
+    clearVerifyError: ReturnType<typeof vi.fn>;
+    tickLockout: ReturnType<typeof vi.fn>;
+    restoreLockout: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(async () => {
+    storeSpy = {
+      locked: vi.fn().mockReturnValue(false),
+      remainingSeconds: vi.fn().mockReturnValue(0),
+      attempts: vi.fn().mockReturnValue(0),
+      verifying: vi.fn().mockReturnValue(false),
+      verifyError: vi.fn().mockReturnValue(null),
+      verifyLogin: vi.fn(),
+      clearVerifyError: vi.fn(),
+      tickLockout: vi.fn(),
+      restoreLockout: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, MfaLoginComponent],
+      imports: [MfaLoginComponent],
       providers: [
-        AuthService,
-        { provide: Router, useValue: { navigate: vi.fn() } },
+        provideRouter([]),
+        { provide: AuthStore, useValue: storeSpy },
       ],
     }).compileComponents();
-
-    const auth = TestBed.inject(AuthService);
-    auth.setToken(createValidToken());
-
-    httpMock = TestBed.inject(HttpTestingController);
-    router = TestBed.inject(Router);
-    component = TestBed.inject(MfaLoginComponent);
-  });
-
-  afterEach(() => {
-    httpMock.verify();
   });
 
   it('should create', () => {
-    expect(component).toBeTruthy();
+    const fixture = TestBed.createComponent(MfaLoginComponent);
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should verify code and navigate on success', () => {
-    component.code = '123456';
-    component.verify();
+  it('should call store.verifyLogin on verify with valid code', () => {
+    const fixture = TestBed.createComponent(MfaLoginComponent);
+    fixture.detectChanges();
 
-    const req = httpMock.expectOne('/api/v1/auth/mfa/verify');
-    expect(req.request.body).toEqual({ code: '123456' });
-    req.flush({ verified: true, backup_codes_remaining: 10 });
-
-    expect(router.navigate).toHaveBeenCalledWith(['/']);
+    fixture.componentInstance.code = '123456';
+    fixture.componentInstance.verify();
+    expect(storeSpy.verifyLogin).toHaveBeenCalledWith('123456', { onSuccess: expect.any(Function) });
   });
 
-  it('should increment attempts on failure', () => {
-    component.code = '000000';
-    component.verify();
+  it('should not call store.verifyLogin with incomplete code', () => {
+    const fixture = TestBed.createComponent(MfaLoginComponent);
+    fixture.detectChanges();
 
-    const req = httpMock.expectOne('/api/v1/auth/mfa/verify');
-    req.flush({ verified: false, backup_codes_remaining: 10 });
-
-    expect(component.attempts).toBe(1);
-    expect(component.errorMessage).toBeTruthy();
+    fixture.componentInstance.code = '12345';
+    fixture.componentInstance.verify();
+    expect(storeSpy.verifyLogin).not.toHaveBeenCalled();
   });
 
-  it('should lock after max attempts', () => {
-    for (let i = 0; i < 5; i++) {
-      component.code = '000000';
-      component.verify();
+  it('should not call store.verifyLogin when locked', () => {
+    storeSpy.locked.mockReturnValue(true);
+    const fixture = TestBed.createComponent(MfaLoginComponent);
+    fixture.detectChanges();
 
-      const req = httpMock.expectOne('/api/v1/auth/mfa/verify');
-      req.flush({ verified: false, backup_codes_remaining: 10 });
-    }
-
-    expect(component.locked).toBeTrue();
-    expect(component.remainingSeconds).toBe(300);
+    fixture.componentInstance.code = '123456';
+    fixture.componentInstance.verify();
+    expect(storeSpy.verifyLogin).not.toHaveBeenCalled();
   });
 
   it('should format time correctly', () => {
-    expect(component.formatTime(0)).toBe('0:00');
-    expect(component.formatTime(65)).toBe('1:05');
-    expect(component.formatTime(300)).toBe('5:00');
+    const fixture = TestBed.createComponent(MfaLoginComponent);
+    expect(fixture.componentInstance.formatTime(0)).toBe('0:00');
+    expect(fixture.componentInstance.formatTime(65)).toBe('1:05');
+    expect(fixture.componentInstance.formatTime(300)).toBe('5:00');
+  });
+
+  it('should render lockout message when locked', () => {
+    storeSpy.locked.mockReturnValue(true);
+    storeSpy.remainingSeconds.mockReturnValue(300);
+    const fixture = TestBed.createComponent(MfaLoginComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.lockout')).toBeTruthy();
+    expect(compiled.querySelector('.lockout p')?.textContent).toContain('5:00');
+  });
+
+  it('should render verify form when not locked', () => {
+    const fixture = TestBed.createComponent(MfaLoginComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.verify-section')).toBeTruthy();
+    expect(compiled.querySelector('.btn-primary')?.textContent).toContain('Verify');
+  });
+
+  it('should render attempts info', () => {
+    storeSpy.attempts.mockReturnValue(2);
+    const fixture = TestBed.createComponent(MfaLoginComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.attempts-info')?.textContent).toContain('3');
+  });
+
+  it('should render error message', () => {
+    storeSpy.verifyError.mockReturnValue('Invalid code');
+    const fixture = TestBed.createComponent(MfaLoginComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.field-error')?.textContent).toContain('Invalid code');
   });
 });

@@ -37,9 +37,12 @@ class TokenRevocationServiceTest {
 
     @Test
     void shouldFailOnNullRefreshToken() {
-        var failure = tokenRevocationService.revoke(null).await().failure();
-        assertTrue(failure.isPresent());
-        assertInstanceOf(IllegalArgumentException.class, failure.get());
+        try {
+            tokenRevocationService.revoke(null).await().indefinitely();
+            fail("Expected IllegalArgumentException");
+        } catch (Exception e) {
+            assertInstanceOf(IllegalArgumentException.class, e);
+        }
         verify(keycloakTokenPort, never()).revokeRefreshToken(any());
     }
 
@@ -48,8 +51,11 @@ class TokenRevocationServiceTest {
         when(keycloakTokenPort.revokeRefreshToken("bad-token"))
                 .thenReturn(Uni.createFrom().failure(new RuntimeException("Revocation failed")));
 
-        var failure = tokenRevocationService.revoke("bad-token").await().failure();
-        assertTrue(failure.isPresent());
-        assertEquals("Revocation failed", failure.get().getMessage());
+        try {
+            tokenRevocationService.revoke("bad-token").await().indefinitely();
+            fail("Expected RuntimeException");
+        } catch (Exception e) {
+            assertEquals("Revocation failed", e.getMessage());
+        }
     }
 }

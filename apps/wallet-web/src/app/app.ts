@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -7,6 +8,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <div class="app-shell">
+      <a href="#main-content" class="skip-link">Skip to main content</a>
       <nav class="sidebar">
         <div class="logo">
           <h2>💰 Wallet</h2>
@@ -28,7 +30,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
           </li>
         </ul>
       </nav>
-      <main class="content">
+      <main id="main-content" class="content" tabindex="-1">
         <router-outlet />
       </main>
     </div>
@@ -49,6 +51,32 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
     .nav-list a:hover { background: #2d2d44; color: white; }
     .nav-list a.active { background: #3b82f6; color: white; font-weight: 500; }
     .content { flex: 1; padding: 2rem; background: #f5f5f7; overflow-y: auto; }
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #3b82f6;
+      color: white;
+      padding: 0.5rem 1rem;
+      z-index: 100;
+      transition: top 0.2s;
+    }
+    .skip-link:focus {
+      top: 0;
+    }
   `],
 })
-export class App {}
+export class App {
+  private readonly router = inject(Router);
+
+  constructor() {
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => {
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+          mainContent.focus();
+        }
+      });
+  }
+}

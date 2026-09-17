@@ -21,6 +21,12 @@ import { Component, input } from '@angular/core';
     }
     .spinner-message { margin-top: 1rem; color: #666; font-size: 0.875rem; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .spinner {
+        animation: none;
+        border-top-color: transparent;
+      }
+    }
   `],
 })
 export class LoadingSpinnerComponent {
