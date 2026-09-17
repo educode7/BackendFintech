@@ -65,6 +65,33 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'mfa',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: 'setup',
+        loadComponent: () =>
+          import('@features/auth/ui/pages/mfa-setup/mfa-setup.component').then(
+            (m) => m.MfaSetupComponent
+          ),
+      },
+      {
+        path: 'verify',
+        loadComponent: () =>
+          import('@features/auth/ui/pages/mfa-login/mfa-login.component').then(
+            (m) => m.MfaLoginComponent
+          ),
+      },
+      {
+        path: 'disable',
+        loadComponent: () =>
+          import('@features/auth/ui/pages/mfa-disable/mfa-disable.component').then(
+            (m) => m.MfaDisableComponent
+          ),
+      },
+    ],
+  },
+  {
     path: '**',
     redirectTo: '',
   },
