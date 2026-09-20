@@ -35,9 +35,11 @@ describe('AccountAdapter', () => {
       const mockAccount = {
         accountId: 'acc-1',
         userId: 'user-1',
-        balance: { amount: '100.00', currency: 'USD' },
+        balanceAmount: 100.00,
+        balanceCurrency: 'USD',
+        status: 'OPEN',
         version: 1,
-        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
       };
       httpPost.mockReturnValue(of(mockAccount));
 
@@ -63,9 +65,11 @@ describe('AccountAdapter', () => {
       const mockAccount = {
         accountId: 'acc-1',
         userId: 'user-1',
-        balance: { amount: '100.00', currency: 'USD' },
+        balanceAmount: 100.00,
+        balanceCurrency: 'USD',
+        status: 'OPEN',
         version: 1,
-        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
       };
       httpGet.mockReturnValue(of(mockAccount));
 
@@ -83,16 +87,18 @@ describe('AccountAdapter', () => {
       const mockAccount = {
         accountId: 'acc-1',
         userId: 'user-1',
-        balance: { amount: '150.00', currency: 'USD' },
+        balanceAmount: 150.00,
+        balanceCurrency: 'USD',
+        status: 'OPEN',
         version: 2,
-        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
       };
       httpPost.mockReturnValue(of(mockAccount));
 
       const idempotencyKey = crypto.randomUUID();
 
       adapter.deposit('acc-1', { amount: '50.00', currency: 'USD' }, idempotencyKey).subscribe((account) => {
-        expect(account.balance.amount).toBe('150.00');
+        expect(account.balanceAmount).toBe(150.00);
       });
 
       expect(httpPost).toHaveBeenCalledOnce();
@@ -108,16 +114,18 @@ describe('AccountAdapter', () => {
       const mockAccount = {
         accountId: 'acc-1',
         userId: 'user-1',
-        balance: { amount: '50.00', currency: 'USD' },
+        balanceAmount: 50.00,
+        balanceCurrency: 'USD',
+        status: 'OPEN',
         version: 3,
-        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
       };
       httpPost.mockReturnValue(of(mockAccount));
 
       const idempotencyKey = crypto.randomUUID();
 
       adapter.withdraw('acc-1', { amount: '50.00', currency: 'USD' }, idempotencyKey).subscribe((account) => {
-        expect(account.balance.amount).toBe('50.00');
+        expect(account.balanceAmount).toBe(50.00);
       });
 
       expect(httpPost).toHaveBeenCalledOnce();
@@ -131,7 +139,7 @@ describe('AccountAdapter', () => {
   describe('list', () => {
     it('should GET /api/v1/accounts with pagination params', () => {
       const mockResponse = {
-        data: [],
+        items: [],
         total: 0,
         page: 0,
         size: 20,

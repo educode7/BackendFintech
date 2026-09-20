@@ -34,10 +34,10 @@ describe('PaymentStore', () => {
   describe('loadPayments', () => {
     it('should load payments list', () => {
       const mockPayments = [
-        { id: 'pay-1', userId: 'u1', amount: { amount: '10', currency: 'USD' }, status: 'COMPLETED', idempotencyKey: 'k1', createdAt: new Date().toISOString() },
-        { id: 'pay-2', userId: 'u2', amount: { amount: '20', currency: 'USD' }, status: 'PENDING', idempotencyKey: 'k2', createdAt: new Date().toISOString() },
+        { id: 'pay-1', accountId: 'a1', userId: 'u1', amount: 10, currency: 'USD', status: 'COMPLETED', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: 'pay-2', accountId: 'a2', userId: 'u2', amount: 20, currency: 'USD', status: 'PENDING', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
       ];
-      adapterSpy.list.mockReturnValue(of({ data: mockPayments, total: 2, page: 0, size: 20 }));
+      adapterSpy.list.mockReturnValue(of({ items: mockPayments, total: 2, page: 0, size: 20 }));
 
       store.loadPayments();
 
@@ -59,7 +59,7 @@ describe('PaymentStore', () => {
 
   describe('loadPayment', () => {
     it('should load single payment', () => {
-      const mockPayment = { id: 'pay-1', userId: 'u1', amount: { amount: '10', currency: 'USD' }, status: 'COMPLETED', idempotencyKey: 'k1', createdAt: new Date().toISOString() };
+      const mockPayment = { id: 'pay-1', accountId: 'a1', userId: 'u1', amount: 10, currency: 'USD', status: 'COMPLETED', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
       adapterSpy.getById.mockReturnValue(of(mockPayment));
 
       store.loadPayment('pay-1');
@@ -71,7 +71,7 @@ describe('PaymentStore', () => {
 
   describe('processPayment', () => {
     it('should add new payment to list', () => {
-      const mockPayment = { id: 'pay-new', userId: 'u1', amount: { amount: '10', currency: 'USD' }, status: 'PENDING', idempotencyKey: 'k-new', createdAt: new Date().toISOString() };
+      const mockPayment = { id: 'pay-new', accountId: 'a1', userId: 'u1', amount: 10, currency: 'USD', status: 'PENDING', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
       adapterSpy.process.mockReturnValue(of(mockPayment));
 
       store.processPayment({ userId: 'u1', amount: { amount: '10', currency: 'USD' } });
@@ -84,7 +84,7 @@ describe('PaymentStore', () => {
 
   describe('reset', () => {
     it('should clear all state', () => {
-      adapterSpy.list.mockReturnValue(of({ data: [{ id: 'p1' }], total: 1, page: 0, size: 20 }));
+      adapterSpy.list.mockReturnValue(of({ items: [{ id: 'p1' }], total: 1, page: 0, size: 20 }));
       store.loadPayments();
       expect(store.hasPayments()).toBe(true);
 

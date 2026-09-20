@@ -41,9 +41,11 @@ describe('AccountStore', () => {
       const mockAccount = {
         accountId: 'acc-1',
         userId: 'user-1',
-        balance: { amount: '100.00', currency: 'USD' },
+        balanceAmount: 100.00,
+        balanceCurrency: 'USD',
+        status: 'OPEN',
         version: 1,
-        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
       };
       adapterSpy.getById.mockReturnValue(of(mockAccount));
 
@@ -69,9 +71,11 @@ describe('AccountStore', () => {
       const mockAccount = {
         accountId: 'acc-2',
         userId: 'user-2',
-        balance: { amount: '50.00', currency: 'USD' },
+        balanceAmount: 50.00,
+        balanceCurrency: 'USD',
+        status: 'OPEN',
         version: 1,
-        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
       };
       adapterSpy.open.mockReturnValue(of(mockAccount));
 
@@ -94,11 +98,13 @@ describe('AccountStore', () => {
       const initial = {
         accountId: 'acc-1',
         userId: 'user-1',
-        balance: { amount: '100.00', currency: 'USD' },
+        balanceAmount: 100.00,
+        balanceCurrency: 'USD',
+        status: 'OPEN',
         version: 1,
-        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
       };
-      const updated = { ...initial, balance: { amount: '150.00', currency: 'USD' }, version: 2 };
+      const updated = { ...initial, balanceAmount: 150.00, version: 2 };
 
       adapterSpy.open.mockReturnValue(of(initial));
       store.openAccount({ userId: 'user-1', initialBalance: { amount: '100.00', currency: 'USD' } });
@@ -112,16 +118,16 @@ describe('AccountStore', () => {
       expect(idempotencyKey).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
       );
-      expect(store.selectedAccount()?.balance.amount).toBe('150.00');
-      expect(store.accounts()[0].balance.amount).toBe('150.00');
+      expect(store.selectedAccount()?.balanceAmount).toBe(150.00);
+      expect(store.accounts()[0].balanceAmount).toBe(150.00);
     });
   });
 
   describe('reset', () => {
     it('should clear all state', () => {
       adapterSpy.open.mockReturnValue(of({
-        accountId: 'acc-1', userId: 'u', balance: { amount: '10', currency: 'USD' },
-        version: 1, createdAt: new Date().toISOString(),
+        accountId: 'acc-1', userId: 'u', balanceAmount: 10, balanceCurrency: 'USD',
+        status: 'OPEN', version: 1, lastUpdated: new Date().toISOString(),
       }));
       store.openAccount({ userId: 'u', initialBalance: { amount: '10', currency: 'USD' } });
       expect(store.hasAccounts()).toBe(true);

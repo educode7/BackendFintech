@@ -51,7 +51,7 @@ import { AuthService } from '@core/infrastructure/auth.service';
                   <span class="recent-id">{{ payment.id | slice:0:8 }}...</span>
                   <span class="recent-status" [class]="payment.status.toLowerCase()">{{ payment.status }}</span>
                 </div>
-                <span class="recent-amount">{{ payment.amount.amount }} {{ payment.amount.currency }}</span>
+                <span class="recent-amount">{{ payment.amount }} {{ payment.currency }}</span>
               </div>
             }
           </div>
@@ -207,11 +207,11 @@ export class DashboardComponent implements OnInit {
     if (accounts.length === 0) return '$0.00';
 
     const total = accounts.reduce((sum, account) => {
-      const amount = parseFloat(account.balance.amount) || 0;
+      const amount = parseFloat(String(account.balanceAmount)) || 0;
       return sum + amount;
     }, 0);
 
-    const currency = accounts[0]?.balance.currency || 'USD';
+    const currency = accounts[0]?.balanceCurrency || 'USD';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency,

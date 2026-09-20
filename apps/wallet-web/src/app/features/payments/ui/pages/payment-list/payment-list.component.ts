@@ -39,7 +39,7 @@ import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
               <tr class="clickable" (click)="viewDetail(payment.id)">
                 <td class="mono">{{ payment.id }}</td>
                 <td>{{ payment.userId }}</td>
-                <td>{{ payment.amount.amount | currency:payment.amount.currency }}</td>
+                <td>{{ payment.amount | currency:payment.currency }}</td>
                 <td>
                   <span class="badge" [class]="payment.status.toLowerCase()">
                     {{ payment.status }}

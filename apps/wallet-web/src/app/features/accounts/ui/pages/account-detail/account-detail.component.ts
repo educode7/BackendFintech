@@ -21,7 +21,7 @@ import { CurrencyPipe } from '@shared/pipes/currency.pipe';
       <div class="detail-card">
         <div class="detail-row">
           <span class="label">Balance</span>
-          <span class="balance">{{ a.balance.amount | currency:a.balance.currency }}</span>
+          <span class="balance">{{ a.balanceAmount | currency:a.balanceCurrency }}</span>
         </div>
         <div class="detail-row">
           <span class="label">User</span>

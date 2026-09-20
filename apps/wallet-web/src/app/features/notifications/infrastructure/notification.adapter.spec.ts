@@ -31,7 +31,7 @@ describe('NotificationAdapter', () => {
   describe('listByUser', () => {
     it('should GET /api/v1/notifications/:userId with pagination', () => {
       const mockResponse = {
-        data: [
+        items: [
           {
             id: 'n-1',
             userId: 'user-1',
@@ -48,9 +48,9 @@ describe('NotificationAdapter', () => {
       };
 
       adapter.listByUser('user-1', 0, 20).subscribe((response) => {
-        expect(response.data.length).toBe(1);
+        expect(response.items.length).toBe(1);
         expect(response.total).toBe(1);
-        expect(response.data[0].type).toBe('EMAIL');
+        expect(response.items[0].type).toBe('EMAIL');
       });
 
       const req = httpMock.expectOne(

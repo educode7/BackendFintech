@@ -27,7 +27,7 @@ import { CurrencyPipe } from '@shared/pipes/currency.pipe';
           <div class="account-card" (click)="viewDetail(account.accountId)">
             <div class="account-header">
               <span class="mono">{{ account.accountId }}</span>
-              <span class="balance">{{ account.balance.amount | currency:account.balance.currency }}</span>
+              <span class="balance">{{ account.balanceAmount | currency:account.balanceCurrency }}</span>
             </div>
             <div class="account-footer">
               <span>v{{ account.version }}</span>

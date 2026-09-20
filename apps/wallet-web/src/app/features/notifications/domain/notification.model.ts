@@ -13,7 +13,7 @@ export interface Notification {
 }
 
 export interface NotificationPageResponse {
-  data: Notification[];
+  items: Notification[];
   total: number;
   page: number;
   size: number;

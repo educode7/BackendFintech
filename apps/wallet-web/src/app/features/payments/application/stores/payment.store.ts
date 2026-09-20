@@ -31,7 +31,7 @@ export class PaymentStore {
     this._error.set(null);
     this.adapter.list(page, size).subscribe({
       next: (res) => {
-        this._payments.set(res.data);
+        this._payments.set(res.items);
         this._total.set(res.total);
         this._loading.set(false);
       },

@@ -30,7 +30,7 @@ export class AccountStore {
     this._error.set(null);
     this.adapter.list(page, size).subscribe({
       next: (res) => {
-        this._accounts.set(res.data);
+        this._accounts.set(res.items);
         this._loading.set(false);
       },
       error: (err) => {

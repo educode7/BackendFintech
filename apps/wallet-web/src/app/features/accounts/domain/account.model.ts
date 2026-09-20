@@ -4,9 +4,11 @@
 export interface Account {
   accountId: string;
   userId: string;
-  balance: Money;
+  balanceAmount: number;
+  balanceCurrency: string;
+  status: string;
   version: number;
-  createdAt: string;
+  lastUpdated: string;
 }
 
 export interface Money {
@@ -30,7 +32,7 @@ export interface WithdrawRequest {
 }
 
 export interface AccountPageResponse {
-  data: Account[];
+  items: Account[];
   total: number;
   page: number;
   size: number;

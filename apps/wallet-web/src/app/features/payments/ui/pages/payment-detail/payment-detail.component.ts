@@ -26,7 +26,7 @@ import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
         </div>
         <div class="detail-row">
           <span class="label">Amount</span>
-          <span class="value">{{ p.amount.amount | currency:p.amount.currency }}</span>
+          <span class="value">{{ p.amount | currency:p.currency }}</span>
         </div>
         <div class="detail-row">
           <span class="label">User</span>
@@ -37,8 +37,8 @@ import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
           <span class="value">{{ p.createdAt | relativeTime }}</span>
         </div>
         <div class="detail-row">
-          <span class="label">Idempotency Key</span>
-          <span class="value mono">{{ p.idempotencyKey }}</span>
+          <span class="label">Account</span>
+          <span class="value mono">{{ p.accountId }}</span>
         </div>
       </div>
     }

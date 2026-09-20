@@ -17,10 +17,11 @@ describe('AccountDetailComponent', () => {
             selectedAccount: () => ({
               accountId: 'acc-001',
               userId: 'user-1',
-              balance: { amount: '100.00', currency: 'USD' },
+              balanceAmount: 100.00,
+              balanceCurrency: 'USD',
               status: 'OPEN',
               version: 1,
-              createdAt: new Date().toISOString(),
+              lastUpdated: new Date().toISOString(),
             }),
             loadAccount: () => {},
           },

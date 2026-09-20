@@ -32,7 +32,7 @@ export class NotificationStore {
     this._error.set(null);
     this.adapter.listByUser(userId, page, size).subscribe({
       next: (res) => {
-        this._notifications.set(res.data);
+        this._notifications.set(res.items);
         this._total.set(res.total);
         this._loading.set(false);
       },

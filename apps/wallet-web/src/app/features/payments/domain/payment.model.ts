@@ -3,12 +3,13 @@
  */
 export interface Payment {
   id: string;
+  accountId: string;
   userId: string;
-  amount: Money;
+  amount: number;
+  currency: string;
   status: PaymentStatus;
-  idempotencyKey: string;
   createdAt: string;
-  completedAt?: string;
+  updatedAt: string;
 }
 
 export interface Money {
@@ -24,7 +25,7 @@ export interface ProcessPaymentRequest {
 }
 
 export interface PaymentPageResponse {
-  data: Payment[];
+  items: Payment[];
   total: number;
   page: number;
   size: number;

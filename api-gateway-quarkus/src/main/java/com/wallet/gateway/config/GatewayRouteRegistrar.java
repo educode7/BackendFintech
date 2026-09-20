@@ -60,7 +60,7 @@ public class GatewayRouteRegistrar {
                 ctx.response().putHeader("Access-Control-Allow-Origin", origin);
                 ctx.response().putHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
                 ctx.response().putHeader("Access-Control-Allow-Headers",
-                        "Content-Type, Authorization, X-Request-Id, Idempotency-Key, X-Correlation-Id");
+                        "Content-Type, Authorization, X-Request-Id, Idempotency-Key, X-Correlation-Id, traceparent, tracestate, X-Client-Version, X-Client-Platform");
                 ctx.response().putHeader("Access-Control-Allow-Credentials", "true");
                 ctx.response().putHeader("Access-Control-Max-Age", "3600");
             }

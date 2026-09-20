@@ -84,8 +84,8 @@ describe('DashboardComponent', () => {
 
   it('should display account count', () => {
     mockAccountStore.accounts.set([
-      { accountId: '1', userId: 'u1', balance: { amount: '100', currency: 'USD' }, version: 1, createdAt: '2024-01-01' },
-      { accountId: '2', userId: 'u1', balance: { amount: '200', currency: 'USD' }, version: 1, createdAt: '2024-01-02' },
+      { accountId: '1', userId: 'u1', balanceAmount: 100, balanceCurrency: 'USD', status: 'OPEN', version: 1, lastUpdated: '2024-01-01' },
+      { accountId: '2', userId: 'u1', balanceAmount: 200, balanceCurrency: 'USD', status: 'OPEN', version: 1, lastUpdated: '2024-01-02' },
     ]);
     const fixture = TestBed.createComponent(DashboardComponent);
     fixture.detectChanges();
