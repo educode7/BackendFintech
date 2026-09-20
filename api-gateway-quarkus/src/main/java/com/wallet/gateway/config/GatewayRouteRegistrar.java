@@ -50,6 +50,28 @@ public class GatewayRouteRegistrar {
 
     void onStart(@Observes StartupEvent event, Router router) {
 
+        // CORS handler — must run BEFORE proxy routes
+        router.route().order(-2).handler(ctx -> {
+            String origin = ctx.request().getHeader("Origin");
+            if (origin != null) {
+                ctx.response().putHeader("Access-Control-Allow-Origin", origin);
+                ctx.response().putHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+                ctx.response().putHeader("Access-Control-Allow-Headers",
+                        "Content-Type, Authorization, X-Request-Id, Idempotency-Key, X-Correlation-Id");
+                ctx.response().putHeader("Access-Control-Allow-Credentials", "true");
+                ctx.response().putHeader("Access-Control-Max-Age", "3600");
+            }
+
+            // Handle preflight OPTIONS — respond immediately
+            if ("OPTIONS".equalsIgnoreCase(ctx.request().method().name())) {
+                ctx.response().setStatusCode(204);
+                ctx.response().end();
+                return;
+            }
+
+            ctx.next();
+        });
+
         // CRITICAL: Register a global BodyHandler BEFORE RESTEasy Reactive's JAX-RS filter chain.
         // Without this, the @PreMatching JAX-RS CorrelationIdFilter consumes the request body
         // and ctx.body().buffer() returns null, bodyHandler never fires.
