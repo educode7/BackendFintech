@@ -5,7 +5,7 @@ export const environment = {
   accountService: '',
   notificationService: '',
   oidc: {
-    issuer: '',
+    issuer: 'http://localhost:8180/realms/wallet',
     clientId: 'wallet-frontend',
     scope: 'openid profile email',
   },
