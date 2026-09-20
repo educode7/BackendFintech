@@ -5,6 +5,14 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () =>
+      import('@features/auth/ui/pages/login/login.component').then(
+        (m) => m.LoginComponent
+      ),
+  },
+  {
+    path: 'dashboard',
+    canActivate: [authGuard],
+    loadComponent: () =>
       import('@features/dashboard/ui/pages/dashboard/dashboard.component').then(
         (m) => m.DashboardComponent
       ),

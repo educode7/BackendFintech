@@ -1,39 +1,44 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs';
+import { AuthService } from '@core/infrastructure/auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <div class="app-shell">
-      <a href="#main-content" class="skip-link">Skip to main content</a>
-      <nav class="sidebar">
-        <div class="logo">
-          <h2>💰 Wallet</h2>
-        </div>
-        <ul class="nav-list">
-          <li>
-            <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-              Dashboard
-            </a>
-          </li>
-          <li>
-            <a routerLink="/payments" routerLinkActive="active">Payments</a>
-          </li>
-          <li>
-            <a routerLink="/accounts" routerLinkActive="active">Accounts</a>
-          </li>
-          <li>
-            <a routerLink="/notifications" routerLinkActive="active">Notifications</a>
-          </li>
-        </ul>
-      </nav>
-      <main id="main-content" class="content" tabindex="-1">
-        <router-outlet />
-      </main>
-    </div>
+    @if (isAuthenticated()) {
+      <div class="app-shell">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        <nav class="sidebar">
+          <div class="logo">
+            <h2>💰 Wallet</h2>
+          </div>
+          <ul class="nav-list">
+            <li>
+              <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+                Dashboard
+              </a>
+            </li>
+            <li>
+              <a routerLink="/payments" routerLinkActive="active">Payments</a>
+            </li>
+            <li>
+              <a routerLink="/accounts" routerLinkActive="active">Accounts</a>
+            </li>
+            <li>
+              <a routerLink="/notifications" routerLinkActive="active">Notifications</a>
+            </li>
+          </ul>
+        </nav>
+        <main id="main-content" class="content" tabindex="-1">
+          <router-outlet />
+        </main>
+      </div>
+    } @else {
+      <router-outlet />
+    }
   `,
   styles: [`
     .app-shell { display: flex; min-height: 100vh; }
@@ -68,6 +73,9 @@ import { filter } from 'rxjs';
 })
 export class App {
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
+
+  readonly isAuthenticated = computed(() => this.authService.isAuthenticated());
 
   constructor() {
     this.router.events

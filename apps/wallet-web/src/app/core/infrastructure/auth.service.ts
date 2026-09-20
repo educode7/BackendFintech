@@ -47,15 +47,15 @@ export class AuthService {
       showDebugInformation: false,
     });
 
-    // Handle the OAuth callback (code exchange)
+    // Handle the OAuth callback (code exchange) — only processes the redirect
+    // if the URL contains an auth code. Does NOT auto-redirect to login.
     await this.oauthService.loadDiscoveryDocumentAndTryLogin();
 
-    // Auto-login if not authenticated
-    if (!this.oauthService.hasValidAccessToken()) {
-      this.login();
-    } else {
+    // Set up user info if already authenticated (e.g. after callback)
+    if (this.oauthService.hasValidAccessToken()) {
       this.setupUserInfo();
     }
+    // If not authenticated, the login page handles the redirect.
   }
 
   // ─── Login / Logout ─────────────────────────────────────
@@ -67,7 +67,7 @@ export class AuthService {
   logout(): void {
     this.oauthService.logOut();
     this.userInfo = null;
-    this.router.navigate(['/login']);
+    this.router.navigate(['/']);
   }
 
   // ─── Token management ──────────────────────────────────

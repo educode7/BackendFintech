@@ -3,10 +3,8 @@ import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '@core/infrastructure/auth.service';
 
 /**
- * Auth guard — redirects to Keycloak login if not authenticated.
- *
- * Uses angular-oauth2-oidc's hasValidAccessToken() for fast local check.
- * The token was validated by Keycloak during the Authorization Code + PKCE flow.
+ * Auth guard — redirects to login page if not authenticated.
+ * The login page handles the Keycloak redirect.
  */
 export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
@@ -16,7 +14,6 @@ export const authGuard: CanActivateFn = () => {
     return true;
   }
 
-  // Redirect to Keycloak login
-  authService.login();
-  return false;
+  // Redirect to login page (root route)
+  return router.createUrlTree(['/']);
 };

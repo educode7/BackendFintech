@@ -126,7 +126,7 @@ describe('AuthService', () => {
     service.logout();
     expect(oauthService.logOut).toHaveBeenCalled();
     expect(service.getCachedUserInfo()).toBeNull();
-    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+    expect(router.navigate).toHaveBeenCalledWith(['/']);
   });
 
   it('should detect token expiring soon', () => {
