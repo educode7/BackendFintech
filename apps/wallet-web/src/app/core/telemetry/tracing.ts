@@ -78,5 +78,5 @@ export async function initializeTracing(): Promise<void> {
     ],
   });
 
-  console.info('[tracing] OpenTelemetry initialized — endpoint:', endpoint);
+  // Tracing initialized — verify via OTel collector in production
 }

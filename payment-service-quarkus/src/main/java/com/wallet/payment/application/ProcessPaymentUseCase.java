@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import jakarta.transaction.Transactional;
+import jakarta.transaction.UserTransaction;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -19,6 +19,7 @@ import com.wallet.shared.money.Money;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 
 /**
  * Use case: process a payment.
@@ -35,6 +36,7 @@ public class ProcessPaymentUseCase {
     private final PaymentRepository paymentRepository;
     private final IdempotencyStore idempotencyStore;
     private final OutboxRepository outboxRepository;
+    private final UserTransaction userTransaction;
 
     @ConfigProperty(name = "wallet.idempotency.ttl-hours", defaultValue = "24")
     int idempotencyTtlHours;
@@ -42,14 +44,32 @@ public class ProcessPaymentUseCase {
     @Inject
     public ProcessPaymentUseCase(PaymentRepository paymentRepository,
                                  IdempotencyStore idempotencyStore,
-                                 OutboxRepository outboxRepository) {
+                                 OutboxRepository outboxRepository,
+                                 UserTransaction userTransaction) {
         this.paymentRepository = paymentRepository;
         this.idempotencyStore = idempotencyStore;
         this.outboxRepository = outboxRepository;
+        this.userTransaction = userTransaction;
     }
 
     /**
-     * Process a payment with idempotency guarantee.
+     * Claim an idempotency slot for a payment.
+     * Called directly by the resource for synchronous flow.
+     */
+    public IdempotencyStore.SlotState claimIdempotency(String key) {
+        return idempotencyStore.claim(key, idempotencyTtlHours);
+    }
+
+    /**
+     * Get cached response for idempotent replay.
+     * Called directly by the resource for synchronous flow.
+     */
+    public Optional<String> getCachedResponse(String key) {
+        return idempotencyStore.getCachedResponse(key);
+    }
+
+    /**
+     * Process payment with idempotency guarantee.
      *
      * @param command the payment command
      * @param correlationId distributed tracing correlation ID
@@ -58,84 +78,108 @@ public class ProcessPaymentUseCase {
     public Uni<PaymentResponse> execute(ProcessPaymentCommand command, String correlationId) {
         String key = command.idempotencyKey();
 
-        // 1. Check idempotency slot
-        IdempotencyStore.SlotState state = idempotencyStore.claim(key, idempotencyTtlHours);
-
-        return switch (state) {
-            case COMPLETED -> {
-                // Replay cached response
-                log.debugf("Idempotent replay for key=%s", key);
-                Optional<String> cached = idempotencyStore.getCachedResponse(key);
-                if (cached.isPresent()) {
-                    yield Uni.createFrom().item(deserializeResponse(cached.get()));
-                } else {
-                    yield Uni.createFrom().failure(
-                            new IllegalStateException("Completed slot but no cached response for key=" + key));
-                }
-            }
-            case IN_PROGRESS -> {
-                // We won the race — proceed to process
-                yield processPayment(command, correlationId);
-            }
-            case DUPLICATE -> {
-                // Another request is already processing this key
-                log.warnf("Duplicate request detected for key=%s", key);
-                yield Uni.createFrom().failure(
-                        new com.wallet.payment.domain.exception.DuplicatePaymentException(key));
-            }
-            case FAILED -> {
-                // Allow retry — re-claim
-                log.infof("Retrying failed payment for key=%s", key);
-                yield processPayment(command, correlationId);
-            }
-        };
+        // 1. Check idempotency slot — run on worker thread (Redis is blocking)
+        return Uni.createFrom().item(() -> idempotencyStore.claim(key, idempotencyTtlHours))
+                .runSubscriptionOn(Infrastructure.getDefaultExecutor())
+                .onItem().transformToUni(state -> {
+                    return switch (state) {
+                        case COMPLETED -> {
+                            log.debugf("Idempotent replay for key=%s", key);
+                            Optional<String> cached = idempotencyStore.getCachedResponse(key);
+                            if (cached.isPresent()) {
+                                yield Uni.createFrom().item(deserializeResponse(cached.get()));
+                            } else {
+                                yield Uni.createFrom().failure(
+                                        new IllegalStateException("Completed slot but no cached response for key=" + key));
+                            }
+                        }
+                        case IN_PROGRESS -> {
+                            log.infof("Processing payment for key=%s", key);
+                            yield Uni.createFrom().item(() -> {
+                                try {
+                                    return processPaymentSync(command, correlationId);
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }).runSubscriptionOn(Infrastructure.getDefaultExecutor());
+                        }
+                        case DUPLICATE -> {
+                            log.warnf("Duplicate request detected for key=%s", key);
+                            yield Uni.createFrom().failure(
+                                    new com.wallet.payment.domain.exception.DuplicatePaymentException(key));
+                        }
+                        case FAILED -> {
+                            log.infof("Retrying failed payment for key=%s", key);
+                            yield Uni.createFrom().item(() -> {
+                                try {
+                                    return processPaymentSync(command, correlationId);
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }).runSubscriptionOn(Infrastructure.getDefaultExecutor());
+                        }
+                    };
+                });
     }
 
     /**
      * Process payment and write to outbox in the SAME transaction.
      * If either payment save or outbox save fails, both are rolled back.
      * The outbox poller will publish the event to Kafka asynchronously.
+     * Uses UserTransaction for explicit transaction management.
+     *
+     * IMPORTANT: The domain Payment is immutable — each state transition (startProcessing,
+     * complete) returns a NEW instance with an incremented version. But the JPA @Version
+     * field is for optimistic locking, not domain versioning. We create the payment
+     * directly in COMPLETED state to avoid the version mismatch that occurs when calling
+     * save() twice (merge with version=2 vs DB version=0 → StaleObjectStateException).
      */
-    @Transactional
     @WithSpan("process-payment")
-    public Uni<PaymentResponse> processPayment(
+    public PaymentResponse processPaymentSync(
             @SpanAttribute("payment.idempotency_key") ProcessPaymentCommand command,
-            @SpanAttribute("correlation.id") String correlationId) {
-        // 2. Create domain entity
-        String paymentId = com.wallet.shared.util.IdGenerator.newId();
-        Payment payment = Payment.create(paymentId, command.accountId(), command.userId(), command.amount(), command.idempotencyKey());
+            @SpanAttribute("correlation.id") String correlationId) throws Exception {
+        userTransaction.begin();
+        try {
+            // 2. Create domain entity — skip PENDING/PROCESSING, go directly to COMPLETED
+            //    This avoids double-save version mismatch with @Version optimistic locking
+            String paymentId = com.wallet.shared.util.IdGenerator.newId();
+            java.time.Instant now = java.time.Instant.now();
+            Payment payment = Payment.of(paymentId, command.accountId(), command.userId(),
+                    command.amount(), command.idempotencyKey(),
+                    Payment.Status.COMPLETED, 0, now, now);
+            log.infof("Payment created: id=%s, userId=%s, amount=%s, key=%s",
+                    payment.id(), payment.userId(), payment.amount(), payment.idempotencyKey());
 
-        // 3. Persist payment
-        Payment saved = paymentRepository.save(payment);
-        log.infof("Payment created: id=%s, userId=%s, amount=%s, key=%s",
-                saved.id(), saved.userId(), saved.amount(), saved.idempotencyKey());
+            // 3. Persist payment (single save — no version conflict)
+            Payment saved = paymentRepository.save(payment);
 
-        // 4. Transition to PROCESSING then COMPLETED
-        Payment processing = saved.startProcessing();
-        Payment completed = processing.complete();
-        Payment finalPayment = paymentRepository.save(completed);
+            // 4. Write to outbox (same transaction as payment)
+            String eventId = com.wallet.shared.util.IdGenerator.newId();
+            String eventType = "PaymentCompleted";
+            String payload = buildEventPayload(saved, correlationId, eventId);
 
-        // 5. Write to outbox (same transaction as payment)
-        String eventId = com.wallet.shared.util.IdGenerator.newId();
-        String eventType = "PaymentCompleted";
-        String payload = buildEventPayload(finalPayment, correlationId, eventId);
+            OutboxEvent outboxEvent = OutboxEvent.create(
+                    eventType,
+                    saved.id(),
+                    "Payment",
+                    payload,
+                    correlationId
+            );
+            outboxRepository.save(outboxEvent);
+            log.infof("Outbox event written: type=%s, paymentId=%s", eventType, saved.id());
 
-        OutboxEvent outboxEvent = OutboxEvent.create(
-                eventType,
-                finalPayment.id(),
-                "Payment",
-                payload,
-                correlationId
-        );
-        outboxRepository.save(outboxEvent);
-        log.infof("Outbox event written: type=%s, paymentId=%s", eventType, finalPayment.id());
+            userTransaction.commit();
 
-        // 6. Cache response for idempotency replay
-        PaymentResponse response = PaymentResponse.from(finalPayment);
-        String responseJson = serializeResponse(response);
-        idempotencyStore.complete(command.idempotencyKey(), responseJson, idempotencyTtlHours);
+            // 5. Cache response for idempotency replay (after commit)
+            PaymentResponse response = PaymentResponse.from(saved);
+            String responseJson = serializeResponse(response);
+            idempotencyStore.complete(command.idempotencyKey(), responseJson, idempotencyTtlHours);
 
-        return Uni.createFrom().item(response);
+            return response;
+        } catch (Exception e) {
+            userTransaction.rollback();
+            throw e;
+        }
     }
 
     private String buildEventPayload(Payment payment, String correlationId, String eventId) {

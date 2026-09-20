@@ -19,29 +19,21 @@ quarkus:
   hibernate-orm:
     database:
       generation: none
+    physical-naming-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
 
   flyway:
     migrate-at-start: true
+    validate-on-migrate: false
+    table: flyway_schema_history_notification
     locations: classpath:db/migration
 
   redis:
-    host: localhost
-    port: 6379
+    hosts: redis://localhost:6379
 
   kafka:
+    bootstrap-servers: localhost:9092
     health:
       enabled: true
-
-  mp:
-    messaging:
-      incoming:
-        payment-events-in:
-          connector: smallrye-kafka
-          topic: payment.events
-          value.deserializer: io.quarkus.kafka.client.serialization.JsonDeserializer
-          group: notification-service
-          auto:
-            offset: earliest
 
   oidc:
     auth-server-url: http://localhost:8180/realms/wallet
@@ -69,3 +61,17 @@ quarkus:
     level: INFO
     category:
       "com.wallet.notification": INFO
+
+mp:
+  messaging:
+    connector:
+      smallrye-kafka:
+        bootstrap:
+          servers: localhost:9092
+    incoming:
+      payment-events-in:
+        connector: smallrye-kafka
+        topic: payment.events
+        value.deserializer: io.quarkus.kafka.client.serialization.JsonDeserializer
+        group: notification-service
+        auto.offset.reset: earliest

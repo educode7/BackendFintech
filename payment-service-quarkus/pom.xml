@@ -68,7 +68,7 @@
         </dependency>
 
         <!-- ======================================== -->
-        <!-- Reactive Persistence                     -->
+        <!-- Persistence (Reactive Panache + Classic JPA) -->
         <!-- ======================================== -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -76,7 +76,15 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-pg-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway</artifactId>
         </dependency>
 
         <!-- ======================================== -->

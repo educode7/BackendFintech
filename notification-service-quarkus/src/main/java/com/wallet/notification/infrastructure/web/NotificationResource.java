@@ -22,12 +22,15 @@ import com.wallet.notification.domain.Notification;
 import com.wallet.notification.domain.NotificationRepository;
 import com.wallet.shared.api.PageResponse;
 
+import io.smallrye.common.annotation.Blocking;
+
 /**
  * REST adapter: Notification API endpoint.
  */
 @Path("/api/v1/notifications")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Blocking
 @Tag(name = "Notifications", description = "Notification retrieval")
 public class NotificationResource {
 

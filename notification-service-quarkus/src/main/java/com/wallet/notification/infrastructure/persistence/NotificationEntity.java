@@ -80,4 +80,10 @@ public class NotificationEntity {
     public String getProcessedEventId() { return processedEventId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getSentAt() { return sentAt; }
+
+    // Setters for updates
+    public void setStatus(String status) { this.status = status; }
+    public void setSubject(String subject) { this.subject = subject; }
+    public void setBody(String body) { this.body = body; }
+    public void setSentAt(Instant sentAt) { this.sentAt = sentAt; }
 }

@@ -28,10 +28,10 @@ public class AccountSnapshotEntity {
     @Column(name = "balance_currency", nullable = false, length = 3)
     private String balanceCurrency;
 
-    @Column(nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 20)
     private String status;
 
-    @Column(nullable = false)
+    @Column(name = "version", nullable = false)
     private long version;
 
     public AccountSnapshotEntity() {}

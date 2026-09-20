@@ -33,6 +33,7 @@ import com.wallet.account.application.AccountResponse;
 import com.wallet.shared.api.PageResponse;
 import com.wallet.shared.money.Money;
 
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -41,6 +42,7 @@ import io.smallrye.mutiny.Uni;
 @Path("/api/v1/accounts")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Blocking
 @Tag(name = "Accounts", description = "Account lifecycle and balance operations")
 public class AccountResource {
 

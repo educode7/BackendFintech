@@ -24,13 +24,19 @@ public class NotificationRepositoryAdapter implements NotificationRepository {
     @Transactional
     public Notification save(Notification notification) {
         NotificationEntity entity = NotificationEntity.fromDomain(notification);
-        if (entityManager.contains(entity)) {
-            entityManager.merge(entity);
+        NotificationEntity existing = entityManager.find(NotificationEntity.class, entity.getId());
+        if (existing != null) {
+            existing.setStatus(entity.getStatus());
+            existing.setSubject(entity.getSubject());
+            existing.setBody(entity.getBody());
+            existing.setSentAt(entity.getSentAt());
+            entityManager.flush();
+            return existing.toDomain();
         } else {
             entityManager.persist(entity);
+            entityManager.flush();
+            return entity.toDomain();
         }
-        entityManager.flush();
-        return entity.toDomain();
     }
 
     @Override

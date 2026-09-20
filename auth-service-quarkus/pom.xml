@@ -24,30 +24,18 @@
         <quarkus.platform.version>3.33.3.2</quarkus.platform.version>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.quarkus.platform</groupId>
-                <artifactId>quarkus-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <!-- REST (reactive) -->
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-rest-jackson</artifactId></dependency>
+
+        <!-- Vert.x + Mutiny WebClient CDI bean -->
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-vertx</artifactId></dependency>
 
         <!-- OIDC (token validation) -->
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-oidc</artifactId></dependency>
 
         <!-- OpenAPI / Swagger -->
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-openapi</artifactId></dependency>
-
-        <!-- Vert.x WebClient (Keycloak API calls) -->
-        <dependency><groupId>io.vertx</groupId><artifactId>vertx-web-client</artifactId></dependency>
 
         <!-- Jackson (JSON) -->
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-jackson</artifactId></dependency>

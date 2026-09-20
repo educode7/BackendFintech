@@ -7,6 +7,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
+import org.jboss.logging.Logger;
+
 import com.wallet.account.domain.exception.AccountNotFoundException;
 import com.wallet.account.domain.exception.ConcurrentModificationException;
 import com.wallet.account.domain.exception.InsufficientFundsException;
@@ -18,8 +20,11 @@ import com.wallet.shared.api.ErrorResponse;
 @Provider
 public class AccountExceptionMapper implements ExceptionMapper<RuntimeException> {
 
+    private static final Logger log = Logger.getLogger(AccountExceptionMapper.class);
+
     @Override
     public Response toResponse(RuntimeException exception) {
+        log.errorf(exception, "Handling unhandled exception: %s", exception.getClass().getName());
         return switch (exception) {
             case AccountNotFoundException e -> buildResponse(
                     Response.Status.NOT_FOUND,

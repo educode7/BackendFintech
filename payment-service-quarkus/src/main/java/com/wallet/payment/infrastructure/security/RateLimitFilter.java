@@ -45,20 +45,29 @@ public class RateLimitFilter implements ContainerRequestFilter {
         }
 
         String key = clientIp + ":" + requestContext.getMethod();
-        if (!rateLimiter.isAllowed(key, MAX_TOKENS, REFILL_RATE)) {
-            log.warnf("Rate limit exceeded for %s %s", clientIp, requestContext.getMethod());
-            requestContext.abortWith(Response.status(429)
-                    .header("Retry-After", "1")
-                    .entity(new com.wallet.shared.api.ErrorResponse(
-                            java.net.URI.create("about:blank"),
-                            "Rate limit exceeded",
-                            429,
-                            "Too many requests. Please retry after 1 second.",
-                            null,
-                            "RATE_LIMITED",
-                            null,
-                            java.time.Instant.now()))
-                    .build());
+
+        // Use non-blocking async check
+        try {
+            Boolean allowed = rateLimiter.isAllowedAsync(key, MAX_TOKENS, REFILL_RATE)
+                    .await().indefinitely();
+            if (allowed != null && !allowed) {
+                log.warnf("Rate limit exceeded for %s %s", clientIp, requestContext.getMethod());
+                requestContext.abortWith(Response.status(429)
+                        .header("Retry-After", "1")
+                        .entity(new com.wallet.shared.api.ErrorResponse(
+                                java.net.URI.create("about:blank"),
+                                "Rate limit exceeded",
+                                429,
+                                "Too many requests. Please retry after 1 second.",
+                                null,
+                                "RATE_LIMITED",
+                                null,
+                                java.time.Instant.now()))
+                        .build());
+            }
+        } catch (Exception e) {
+            log.warnf("Rate limiter check failed, allowing request: %s", e.getMessage());
+            // Fail open — allow request if rate limiter is unavailable
         }
     }
 }

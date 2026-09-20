@@ -38,4 +38,4 @@ test-payments:
 	  -d '{"userId":"u-1","amount":"100.00 USD"}'
 
 kafka-topics:
-	docker exec -it wallet-kafka /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
+	docker exec -it wallet-kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list

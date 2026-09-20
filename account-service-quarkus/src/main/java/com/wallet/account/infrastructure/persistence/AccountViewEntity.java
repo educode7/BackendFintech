@@ -23,16 +23,16 @@ public class AccountViewEntity {
     @Column(name = "user_id", nullable = false)
     private String userId;
 
-    @Column(nullable = false, precision = 19, scale = 4)
+    @Column(name = "balance_amount", nullable = false, precision = 19, scale = 4)
     private java.math.BigDecimal balanceAmount;
 
-    @Column(nullable = false, length = 3)
+    @Column(name = "balance_currency", nullable = false, length = 3)
     private String balanceCurrency;
 
-    @Column(nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 20)
     private String status;
 
-    @Column(nullable = false)
+    @Column(name = "version", nullable = false)
     private long version;
 
     @Column(name = "last_updated", nullable = false)

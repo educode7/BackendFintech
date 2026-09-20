@@ -8,7 +8,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 /**
@@ -33,7 +32,6 @@ public class OutboxEventEntity {
     @Column(name = "aggregate_type", nullable = false)
     private String aggregateType;
 
-    @Lob
     @Column(nullable = false)
     private String payload;
 

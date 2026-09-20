@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.PersistenceException;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -18,6 +19,7 @@ import com.wallet.shared.util.JsonUtil;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.redis.client.RedisAPI;
 import io.vertx.mutiny.redis.client.Response;
@@ -48,6 +50,7 @@ public class PaymentEventConsumer {
     }
 
     @Incoming("payment-events-in")
+    @Blocking
     @WithSpan("consume-payment-event")
     public Uni<Void> onPaymentCompleted(@SpanAttribute("event.id") Message<String> message) {
         try {
@@ -72,13 +75,17 @@ public class PaymentEventConsumer {
                     payload.getString("status"),
                     new com.wallet.shared.event.EventMetadata(eventId, java.time.Instant.now(), null, 1));
 
-            // 3. Process notification
+            // 3. Process notification (runs on worker thread via @Blocking)
             log.infof("Processing PaymentCompletedEvent: paymentId=%s, userId=%s", event.paymentId(), event.userId());
             notificationService.handlePaymentCompleted(event);
 
             // 4. Mark inbox
             markAsProcessed(eventId);
 
+            return Uni.createFrom().voidItem();
+        } catch (PersistenceException e) {
+            // Duplicate from consumer replays — already persisted, treat as success
+            log.infof("Duplicate notification ignored (already persisted): %s", e.getMessage());
             return Uni.createFrom().voidItem();
         } catch (Exception e) {
             log.errorf("Failed to process payment event: %s", e.getMessage(), e);

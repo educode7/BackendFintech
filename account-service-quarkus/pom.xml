@@ -52,7 +52,9 @@
 
         <!-- Reactive Persistence -->
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-hibernate-reactive-panache</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-reactive-pg-client</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-jdbc-postgresql</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-flyway</artifactId></dependency>
 
         <!-- gRPC -->
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-grpc</artifactId></dependency>

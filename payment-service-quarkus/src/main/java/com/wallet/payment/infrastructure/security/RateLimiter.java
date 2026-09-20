@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 
 import io.vertx.mutiny.redis.client.RedisAPI;
 import io.vertx.mutiny.redis.client.Response;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Token-bucket rate limiter backed by Redis.
@@ -28,29 +29,28 @@ public class RateLimiter {
 
     /**
      * Check if request is allowed under token bucket.
+     * Returns a Uni<Boolean> for non-blocking usage.
      *
      * @param key         unique key (e.g., IP + endpoint)
      * @param maxTokens   burst capacity
      * @param refillRate  tokens per second
-     * @return true if allowed, false if rate limited
+     * @return Uni<Boolean> true if allowed, false if rate limited
      */
-    public boolean isAllowed(String key, int maxTokens, double refillRate) {
-        try {
-            String redisKey = "ratelimit:" + key;
-            Response response = redisAPI.eval(List.of(
-                    buildLuaScript(),
-                    "1",
-                    redisKey,
-                    String.valueOf(maxTokens),
-                    String.valueOf(refillRate),
-                    String.valueOf(System.currentTimeMillis() / 1000)
-            )).await().indefinitely();
-
-            return response != null && response.toLong() == 1;
-        } catch (Exception e) {
+    public Uni<Boolean> isAllowedAsync(String key, int maxTokens, double refillRate) {
+        String redisKey = "ratelimit:" + key;
+        return redisAPI.eval(List.of(
+                buildLuaScript(),
+                "1",
+                redisKey,
+                String.valueOf(maxTokens),
+                String.valueOf(refillRate),
+                String.valueOf(System.currentTimeMillis() / 1000)
+        ))
+        .onFailure().recoverWithItem(e -> {
             log.warnf("Rate limiter failed, allowing request: %s", e.getMessage());
-            return true; // fail open
-        }
+            return null; // fail open
+        })
+        .map(response -> response != null && response.toLong() == 1);
     }
 
     private String buildLuaScript() {

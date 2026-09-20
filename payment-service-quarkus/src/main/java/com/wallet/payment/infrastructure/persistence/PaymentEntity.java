@@ -65,7 +65,28 @@ public class PaymentEntity {
     }
 
     /**
-     * Convert domain Payment to JPA entity.
+     * Convert domain Payment to JPA entity for NEW persistence.
+     * Does NOT set the ID — Hibernate generates it via @GeneratedValue.
+     * After persist(), copy the generated ID back to the domain via toDomain().
+     */
+    public static PaymentEntity fromDomainNew(Payment domain) {
+        PaymentEntity entity = new PaymentEntity();
+        // ID is NOT set — Hibernate generates UUID via @GeneratedValue
+        entity.userId = domain.userId();
+        entity.accountId = domain.accountId();
+        entity.amount = domain.amount().amount();
+        entity.currency = domain.amount().currency();
+        entity.status = domain.status().name();
+        entity.idempotencyKey = domain.idempotencyKey();
+        entity.createdAt = domain.createdAt();
+        entity.updatedAt = domain.updatedAt();
+        // version is NOT set — Hibernate initializes to 0 on INSERT
+        return entity;
+    }
+
+    /**
+     * Convert domain Payment to JPA entity for MERGE (update existing).
+     * Sets the ID and version from the domain for optimistic locking.
      */
     public static PaymentEntity fromDomain(Payment domain) {
         PaymentEntity entity = new PaymentEntity();

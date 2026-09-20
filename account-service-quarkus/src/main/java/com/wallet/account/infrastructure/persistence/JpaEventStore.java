@@ -107,15 +107,13 @@ public class JpaEventStore implements EventStore {
     }
 
     private long getCurrentVersion(String aggregateId) {
-        Optional<Long> maxVersion = entityManager
+        Long maxVersion = entityManager
                 .createQuery("SELECT MAX(e.version) FROM EventStoreEntity e WHERE e.aggregateId = :aggregateId",
                         Long.class)
                 .setParameter("aggregateId", aggregateId)
-                .getResultList()
-                .stream()
-                .findFirst();
+                .getSingleResult();
 
-        return maxVersion.orElse(0L);
+        return maxVersion != null ? maxVersion : 0L;
     }
 
     private AccountEvent toDomainEvent(EventStoreEntity entity) {

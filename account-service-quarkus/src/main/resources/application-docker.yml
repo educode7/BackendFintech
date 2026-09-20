@@ -1,21 +1,29 @@
-%docker:
-  quarkus:
-    datasource:
-      username: wallet
-      password: change-me
-      jdbc:
-        url: jdbc:postgresql://postgres:5432/wallet
-      reactive:
-        url: postgresql://postgres:5432/wallet
+quarkus:
+  datasource:
+    username: wallet
+    password: change-me
+    jdbc:
+      url: jdbc:postgresql://postgres:5432/wallet
+    reactive:
+      url: postgresql://postgres:5432/wallet
 
-    redis:
-      host: redis
-      port: 6379
+  redis:
+    hosts: redis://redis:6379
 
-    oidc:
-      auth-server-url: http://keycloak:8180/realms/wallet
+  kafka:
+    bootstrap-servers: kafka:9092
 
-    opentelemetry:
-      exporter:
-        otlp:
-          endpoint: http://otel-collector:4317
+  mp:
+    messaging:
+      connector:
+        smallrye-kafka:
+          bootstrap:
+            servers: kafka:9092
+
+  oidc:
+    auth-server-url: http://keycloak:8180/realms/wallet
+
+  opentelemetry:
+    exporter:
+      otlp:
+        endpoint: http://otel-collector:4317

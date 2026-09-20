@@ -3,24 +3,25 @@ FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /build
 
 COPY pom.xml ./
-COPY shared shared
-RUN mvn -pl shared -am -DskipTests install -q
+COPY shared/pom.xml shared/
+COPY api-gateway-quarkus/pom.xml api-gateway-quarkus/
+COPY payment-service-quarkus/pom.xml payment-service-quarkus/
+COPY account-service-quarkus/pom.xml account-service-quarkus/
+COPY notification-service-quarkus/pom.xml notification-service-quarkus/
+COPY auth-service-quarkus/pom.xml auth-service-quarkus/
+RUN mvn -N install -q
 
-COPY config-service config-service
-RUN mvn -pl config-service -am -DskipTests package -q
+COPY config-service/ config-service/
+RUN mvn -f config-service/pom.xml -DskipTests package -q
 
 FROM eclipse-temurin:25-jre-jammy
 WORKDIR /app
-COPY --from=builder /build/config-service/target/*.jar app.jar
+COPY --from=builder /build/config-service/target/config-service-1.0.0.jar app.jar
 COPY config-repo /config-repo
 EXPOSE 8888
 
-# ── JVM Tuning ──────────────────────────────────────────────────────────
-# Config server is lightweight — minimal heap, no ZGC needed.
-# But we keep ZGC for consistency and fast startup.
 ENTRYPOINT ["java", \
     "-XX:+UseZGC", \
-    "-XX:+ZGenerational", \
     "-Xms128m", \
     "-Xmx256m", \
     "-jar", "/app/app.jar"]

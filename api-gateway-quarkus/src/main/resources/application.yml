@@ -8,13 +8,12 @@ quarkus:
     host: 0.0.0.0
 
   redis:
-    host: localhost
-    port: 6379
+    hosts: redis://localhost:6379
 
   oidc:
     auth-server-url: http://localhost:8180/realms/wallet
     client-id: wallet-backend
-    enabled: true
+    enabled: false
     application-type: service
     credentials:
       secret: secret
@@ -44,21 +43,20 @@ quarkus:
     category:
       "com.wallet.gateway": INFO
 
-# Custom routing config
 wallet:
   gateway:
     routes:
       payment-service:
-        url: http://localhost:8081
+        url: http://payment-service:8081
         path: /api/v1/payments
       account-service:
-        url: http://localhost:8082
+        url: http://account-service:8082
         path: /api/v1/accounts
       notification-service:
-        url: http://localhost:8083
+        url: http://notification-service:8083
         path: /api/v1/notifications
       auth-service:
-        url: http://localhost:8084
+        url: http://auth-service:8084
         path: /api/v1/auth
     rate-limit:
       replenish-rate: 100

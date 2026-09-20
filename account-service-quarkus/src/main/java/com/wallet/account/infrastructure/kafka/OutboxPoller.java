@@ -49,7 +49,7 @@ public class OutboxPoller {
     /**
      * Poll unpublished events every 500ms and publish to Kafka.
      */
-    @Scheduled(every = "500ms")
+    @Scheduled(every = "PT0.5S")
     void poll() {
         List<EventStoreEntity> events = eventStore.findUnpublished(BATCH_SIZE);
         if (events.isEmpty()) {

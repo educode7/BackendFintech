@@ -5,6 +5,14 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://localhost:4200"
+            - "http://localhost:3000"
+          allowed_headers:
+            - "Content-Type"
+            - "Authorization"
+          max_age: 7200
 
 processors:
   batch:
@@ -24,7 +32,7 @@ exporters:
 
   # Send to Prometheus as metrics
   prometheus:
-    endpoint: 0.0.0.0:8888
+    endpoint: 0.0.0.0:8889
     namespace: wallet
 
 extensions:

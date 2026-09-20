@@ -20,8 +20,14 @@ public class JpaOutboxRepository implements OutboxRepository {
     @PersistenceContext
     EntityManager entityManager;
 
+    /**
+     * Persists an outbox event.
+     * <p>
+     * CRITICAL: No @Transactional here — the transaction is managed by UserTransaction
+     * in ProcessPaymentUseCase.processPaymentSync(). Adding @Transactional would create
+     * a nested transaction that conflicts with the outer UserTransaction.
+     */
     @Override
-    @Transactional
     public void save(OutboxEvent event) {
         OutboxEventEntity entity = new OutboxEventEntity(
                 event.eventType(),

@@ -11,6 +11,7 @@ import com.wallet.payment.domain.exception.PaymentNotFoundException;
 import com.wallet.shared.api.PageResponse;
 
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 
 /**
  * Use case: retrieve payments.
@@ -31,6 +32,7 @@ public class GetPaymentUseCase {
     public Uni<PaymentResponse> execute(String paymentId) {
         return Uni.createFrom().item(() -> paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException(paymentId)))
+                .runSubscriptionOn(Infrastructure.getDefaultExecutor())
                 .map(PaymentResponse::from);
     }
 
@@ -48,6 +50,6 @@ public class GetPaymentUseCase {
                     .toList();
 
             return PageResponse.of(items, total, page, size);
-        });
+        }).runSubscriptionOn(Infrastructure.getDefaultExecutor());
     }
 }

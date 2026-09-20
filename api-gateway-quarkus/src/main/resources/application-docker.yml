@@ -1,25 +1,24 @@
-%docker:
-  quarkus:
-    redis:
-      host: redis
-      port: 6379
+quarkus:
+  redis:
+    hosts: redis://redis:6379
 
-    oidc:
-      auth-server-url: http://keycloak:8180/realms/wallet
+  oidc:
+    auth-server-url: http://keycloak:8180/realms/wallet
+    enabled: false
 
-    opentelemetry:
-      exporter:
-        otlp:
-          endpoint: http://otel-collector:4317
+  opentelemetry:
+    exporter:
+      otlp:
+        endpoint: http://otel-collector:4317
 
-  wallet:
-    gateway:
-      routes:
-        payment-service:
-          url: http://payment-service:8081
-        account-service:
-          url: http://account-service:8082
-        notification-service:
-          url: http://notification-service:8083
-        auth-service:
-          url: http://auth-service:8084
+wallet:
+  gateway:
+    routes:
+      payment-service:
+        url: http://payment-service:8081
+      account-service:
+        url: http://account-service:8082
+      notification-service:
+        url: http://notification-service:8083
+      auth-service:
+        url: http://auth-service:8084

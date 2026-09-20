@@ -13,9 +13,9 @@ import com.wallet.payment.domain.Payment;
 import com.wallet.payment.domain.PaymentRepository;
 
 /**
- * Infrastructure adapter: PaymentRepository implementation using Hibernate Reactive.
+ * Infrastructure adapter: PaymentRepository implementation using classic JPA.
  * <p>
- * Uses Panache for reactive persistence. No blocking calls.
+ * Uses EntityManager with @Transactional for persistence.
  */
 @ApplicationScoped
 public class PaymentRepositoryAdapter implements PaymentRepository {
@@ -23,17 +23,29 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
     @PersistenceContext
     EntityManager entityManager;
 
+    /**
+     * Persists a new payment.
+     * <p>
+     * Uses persist() with Hibernate-generated UUID (fromDomainNew does not set ID).
+     * After persist, copies the generated ID back into the domain object.
+     */
     @Override
-    @Transactional
     public Payment save(Payment payment) {
-        PaymentEntity entity = PaymentEntity.fromDomain(payment);
-        if (entityManager.contains(entity)) {
-            entityManager.merge(entity);
-        } else {
-            entityManager.persist(entity);
-        }
+        PaymentEntity entity = PaymentEntity.fromDomainNew(payment);
+        entityManager.persist(entity);
         entityManager.flush();
-        return entity.toDomain();
+        // Copy the Hibernate-generated ID back to the domain
+        return Payment.of(
+                entity.getId().toString(),
+                payment.accountId(),
+                payment.userId(),
+                payment.amount(),
+                payment.idempotencyKey(),
+                payment.status(),
+                entity.getVersion(),
+                payment.createdAt(),
+                payment.updatedAt()
+        );
     }
 
     @Override

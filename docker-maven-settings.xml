@@ -1,0 +1,42 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <mirrors>
+    <mirror>
+      <id>aliyun</id>
+      <mirrorOf>central</mirrorOf>
+      <name>Aliyun Maven Mirror</name>
+      <url>https://maven.aliyun.com/repository/public</url>
+    </mirror>
+    <mirror>
+      <id>aliyun-quarkus</id>
+      <mirrorOf>quarkus</mirrorOf>
+      <name>Aliyun Quarkus Mirror</name>
+      <url>https://maven.aliyun.com/repository/quarkus</url>
+    </mirror>
+  </mirrors>
+  <profiles>
+    <profile>
+      <id>quarkus</id>
+      <repositories>
+        <repository>
+          <id>quarkus</id>
+          <url>https://repo.quarkus.io/content/groups/public</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>quarkus</id>
+          <url>https://repo.quarkus.io/content/groups/public</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>quarkus</activeProfile>
+  </activeProfiles>
+</settings>

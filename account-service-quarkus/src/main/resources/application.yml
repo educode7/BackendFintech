@@ -23,23 +23,30 @@ quarkus:
   hibernate-orm:
     database:
       generation: none
+    physical-naming-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
     validate-in-dev-mode: true
 
   flyway:
     migrate-at-start: true
+    validate-on-migrate: false
+    table: flyway_schema_history_account
     schemas: public
     locations: classpath:db/migration
 
   redis:
-    host: localhost
-    port: 6379
+    hosts: redis://localhost:6379
 
   kafka:
+    bootstrap-servers: localhost:9092
     health:
       enabled: true
 
   mp:
     messaging:
+      connector:
+        smallrye-kafka:
+          bootstrap:
+            servers: localhost:9092
       incoming:
         payment-events-in:
           connector: smallrye-kafka

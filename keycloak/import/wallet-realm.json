@@ -57,7 +57,6 @@
   "otpPolicyAlgorithm": "HmacSHA1",
   "otpPolicyDigits": 6,
   "otpPolicyPeriod": 30,
-  "otpPolicyCodeRecoveryEnabled": true,
   "otpSupportedApplications": ["FREEOTP", "GOOGLE_AUTHENTICATOR"],
   "requiredActions": [
     {

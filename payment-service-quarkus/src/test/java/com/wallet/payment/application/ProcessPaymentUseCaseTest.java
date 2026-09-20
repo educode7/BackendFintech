@@ -23,6 +23,7 @@ import com.wallet.payment.domain.PaymentRepository;
 import com.wallet.payment.domain.exception.DuplicatePaymentException;
 import com.wallet.shared.money.Money;
 
+import jakarta.transaction.UserTransaction;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 
@@ -33,13 +34,17 @@ class ProcessPaymentUseCaseTest {
     @Mock PaymentRepository paymentRepository;
     @Mock IdempotencyStore idempotencyStore;
     @Mock OutboxRepository outboxRepository;
+    @Mock UserTransaction userTransaction;
 
     ProcessPaymentUseCase useCase;
 
     @BeforeEach
-    void setUp() {
-        useCase = new ProcessPaymentUseCase(paymentRepository, idempotencyStore, outboxRepository);
+    void setUp() throws Exception {
+        useCase = new ProcessPaymentUseCase(paymentRepository, idempotencyStore, outboxRepository, userTransaction);
         useCase.idempotencyTtlHours = 24;
+        lenient().when(userTransaction.getStatus()).thenReturn(0); // STATUS_NO_TRANSACTION
+        lenient().doNothing().when(userTransaction).begin();
+        lenient().doNothing().when(userTransaction).commit();
     }
 
     @Test
