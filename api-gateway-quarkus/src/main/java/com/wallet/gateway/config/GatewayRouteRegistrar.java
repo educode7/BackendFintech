@@ -40,6 +40,9 @@ public class GatewayRouteRegistrar {
     @ConfigProperty(name = "wallet.gateway.routes.notification-service.url")
     String notificationServiceUrl;
 
+    @ConfigProperty(name = "wallet.gateway.routes.auth-service.url")
+    String authServiceUrl;
+
     public GatewayRouteRegistrar(Vertx vertx) {
         this.vertx = vertx;
         this.httpClient = HttpClient.newBuilder()
@@ -83,9 +86,11 @@ public class GatewayRouteRegistrar {
                 .handler(ctx -> proxyRequest(ctx, accountServiceUrl));
         router.route("/api/v1/notifications*")
                 .handler(ctx -> proxyRequest(ctx, notificationServiceUrl));
+        router.route("/api/v1/auth*")
+                .handler(ctx -> proxyRequest(ctx, authServiceUrl));
 
-        log.infof("Gateway routes registered: accounts→%s, payments→%s, notifications→%s",
-                accountServiceUrl, paymentServiceUrl, notificationServiceUrl);
+        log.infof("Gateway routes registered: accounts→%s, payments→%s, notifications→%s, auth→%s",
+                accountServiceUrl, paymentServiceUrl, notificationServiceUrl, authServiceUrl);
     }
 
     private void proxyRequest(io.vertx.ext.web.RoutingContext ctx, String serviceUrl) {

@@ -30,7 +30,7 @@ import org.jboss.logging.Logger;
  * REST adapter: MFA/2FA endpoints.
  * All endpoints are authenticated — the user identity comes from the JWT.
  */
-@Path("/auth/mfa")
+@Path("/api/v1/auth/mfa")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Authenticated

@@ -36,7 +36,7 @@ import org.jboss.logging.Logger;
  * The cookie is automatically sent by the browser on every request to the auth domain.
  * The backend reads it when the request body is empty.
  */
-@Path("/auth")
+@Path("/api/v1/auth")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Auth", description = "Token refresh, revocation, and user identity")
