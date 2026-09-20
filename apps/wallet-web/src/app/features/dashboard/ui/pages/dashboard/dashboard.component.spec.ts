@@ -31,6 +31,7 @@ describe('DashboardComponent', () => {
 
   const mockAuthService = {
     getCachedUserInfo: vi.fn().mockReturnValue({ sub: 'test-user', email: 'test@example.com' }),
+    getUserInfo: vi.fn().mockReturnValue({ sub: 'test-user', email: 'test@example.com' }),
   };
 
   beforeEach(async () => {

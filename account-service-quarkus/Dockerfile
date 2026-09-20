@@ -6,6 +6,7 @@ ARG QUARKUS_PROFILE=docker
 ENV QUARKUS_PROFILE=${QUARKUS_PROFILE}
 ARG KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 ENV QUARKUS_KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+ARG OIDC_AUTH_SERVER_URL=http://keycloak:8180/realms/wallet
 COPY pom.xml .
 COPY shared/pom.xml shared/
 COPY api-gateway-quarkus/pom.xml api-gateway-quarkus/
@@ -15,7 +16,7 @@ COPY notification-service-quarkus/pom.xml notification-service-quarkus/
 COPY auth-service-quarkus/pom.xml auth-service-quarkus/
 COPY shared/ shared/
 COPY account-service-quarkus/ account-service-quarkus/
-RUN --mount=type=cache,target=/root/.m2/repository mvn clean package -pl account-service-quarkus -am -DskipTests -U -Dquarkus.profile=docker
+RUN --mount=type=cache,target=/root/.m2/repository mvn clean package -pl account-service-quarkus -am -DskipTests -U -Dquarkus.profile=docker -Dquarkus.oidc.auth-server-url=${OIDC_AUTH_SERVER_URL}
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app

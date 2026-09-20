@@ -11,7 +11,7 @@ quarkus:
     auth-server-url: http://localhost:8180/realms/wallet
     client-id: wallet-backend
     credentials:
-      secret: ""
+      secret: "p4PPO2LQkZfJfMOeQ4xYoXs541tpxmzC"
     token:
       issuer: http://localhost:8180/realms/wallet
 
@@ -23,14 +23,6 @@ quarkus:
     enabled: true
     expose:
       enabled: true
-
-  opentelemetry:
-    enabled: true
-    service:
-      name: auth-service
-    exporter:
-      otlp:
-        endpoint: http://localhost:4317
 
   micrometer:
     export:

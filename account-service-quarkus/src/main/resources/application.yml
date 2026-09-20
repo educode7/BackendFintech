@@ -68,20 +68,7 @@ quarkus:
     enabled: true
     application-type: service
     credentials:
-      secret: secret
-
-  opentelemetry:
-    enabled: true
-    service:
-      name: account-service
-    exporter:
-      otlp:
-        endpoint: http://localhost:4317
-
-  micrometer:
-    export:
-      prometheus:
-        enabled: true
+      secret: "p4PPO2LQkZfJfMOeQ4xYoXs541tpxmzC"
 
   smallrye-health:
     enabled: true

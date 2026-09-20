@@ -1,79 +1,40 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { switchMap, catchError, throwError } from 'rxjs';
-import { AuthService } from '@core/infrastructure/auth.service';
+import { catchError, throwError } from 'rxjs';
+import { OAuthService } from 'angular-oauth2-oidc';
 
 /**
- * Transparent token refresh interceptor.
+ * Token interceptor — attaches the access token to all API requests.
  *
- * Token strategy:
- * - Access token: attached from memory via AuthService.getToken()
- * - Refresh token: HttpOnly Secure cookie (sent automatically by the browser)
- *
- * Flow on 401:
- * 1. The access token is expired or invalid
- * 2. Interceptor calls refreshAccessToken() → POST /auth/refresh with credentials
- * 3. Backend reads refresh_token from HttpOnly cookie
- * 4. Backend returns new access_token + sets new refresh_token cookie
- * 5. Original request is retried with the new access token
- *
- * Skips refresh/revoke endpoints to avoid infinite loops.
+ * Uses angular-oauth2-oidc for token management:
+ * - Token attachment: OAuthService.getAccessToken()
+ * - Token refresh: handled by OAuthService via session checks / silent refresh
+ * - 401 handling: redirect to Keycloak login
  */
 export const tokenRefreshInterceptor: HttpInterceptorFn = (req, next) => {
-  const auth = inject(AuthService);
+  const oauthService = inject(OAuthService);
 
-  // Never intercept the refresh/revoke endpoints themselves
-  if (req.url.includes('/auth/refresh') || req.url.includes('/auth/revoke')) {
-    // But still attach access token for /auth/revoke (it needs identity)
-    if (req.url.includes('/auth/revoke') && auth.getToken()) {
-      const cloned = req.clone({
-        setHeaders: { Authorization: `Bearer ${auth.getToken()}` },
-      });
-      return next(cloned);
-    }
+  // Skip auth for Keycloak/OIDC endpoints
+  if (req.url.includes('/realms/') || req.url.includes('/protocol/')) {
     return next(req);
   }
 
-  // Attach access token to all other requests
+  // Attach access token to all API requests
   let authReq = req;
-  if (auth.getToken()) {
+  if (oauthService.hasValidAccessToken()) {
+    const token = oauthService.getAccessToken();
     authReq = req.clone({
-      setHeaders: { Authorization: `Bearer ${auth.getToken()}` },
+      setHeaders: { Authorization: `Bearer ${token}` },
     });
-  }
-
-  // Pre-emptive refresh when token is about to expire
-  if (auth.isTokenExpiringSoon(60)) {
-    return auth.refreshAccessToken().pipe(
-      switchMap(() => {
-        const retryReq = req.clone({
-          setHeaders: { Authorization: `Bearer ${auth.getToken()}` },
-        });
-        return next(retryReq);
-      })
-    );
   }
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status !== 401) {
-        return throwError(() => error);
+      if (error.status === 401) {
+        // Token expired or invalid — redirect to Keycloak login
+        oauthService.initLoginFlow();
       }
-
-      // Attempt a single refresh-retry cycle
-      // The refresh_token cookie is sent automatically — no need to include it in the body
-      return auth.refreshAccessToken().pipe(
-        switchMap(() => {
-          const retryReq = req.clone({
-            setHeaders: { Authorization: `Bearer ${auth.getToken()}` },
-          });
-          return next(retryReq);
-        }),
-        catchError((refreshError) => {
-          auth.clearToken();
-          return throwError(() => refreshError);
-        })
-      );
+      return throwError(() => error);
     })
   );
 };

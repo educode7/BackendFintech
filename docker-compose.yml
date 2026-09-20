@@ -285,8 +285,8 @@ services:
       QUARKUS_PROFILE: docker
       QUARKUS_OIDC_AUTH_SERVER_URL: http://keycloak:8180/realms/wallet
       QUARKUS_OIDC_CLIENT_ID: wallet-backend
-      QUARKUS_OIDC_CREDENTIALS_SECRET: secret
-      QUARKUS_OIDC_TOKEN_ISSUER: http://keycloak:8180/realms/wallet
+      QUARKUS_OIDC_CREDENTIALS_SECRET: p4PPO2LQkZfJfMOeQ4xYoXs541tpxmzC
+      QUARKUS_OIDC_TOKEN_ISSUER: http://localhost:8180/realms/wallet
       QUARKUS_REDIS_HOSTS: redis://redis:6379
       QUARKUS_OPENTELEMETRY_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       QUARKUS_SMALLRYE_HEALTH_ENABLED: "true"

@@ -1,13 +1,9 @@
 quarkus:
   oidc:
     auth-server-url: http://keycloak:8180/realms/wallet
-    token:
-      issuer: http://keycloak:8180/realms/wallet
-
-  opentelemetry:
-    exporter:
-      otlp:
-        endpoint: http://otel-collector:4317
+    client-id: wallet-backend
+    credentials:
+      secret: "p4PPO2LQkZfJfMOeQ4xYoXs541tpxmzC"
 
 keycloak:
   admin:

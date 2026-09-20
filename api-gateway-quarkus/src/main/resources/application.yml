@@ -16,20 +16,12 @@ quarkus:
     enabled: false
     application-type: service
     credentials:
-      secret: secret
+      secret: "p4PPO2LQkZfJfMOeQ4xYoXs541tpxmzC"
 
   smallrye-health:
     enabled: true
     expose:
       enabled: true
-
-  opentelemetry:
-    enabled: true
-    service:
-      name: api-gateway
-    exporter:
-      otlp:
-        endpoint: http://localhost:4317
 
   micrometer:
     export:

@@ -39,7 +39,7 @@ describe('NotificationStore', () => {
         { id: 'n-1', userId: 'u1', type: 'EMAIL', subject: 'Test', body: 'Body', status: 'SENT', createdAt: new Date().toISOString() },
         { id: 'n-2', userId: 'u1', type: 'PUSH', subject: 'Alert', body: 'Body', status: 'PENDING', createdAt: new Date().toISOString() },
       ];
-      adapterSpy.listByUser.mockReturnValue(of({ data: mockNotifications, total: 2, page: 0, size: 20 }));
+      adapterSpy.listByUser.mockReturnValue(of({ items: mockNotifications, total: 2, page: 0, size: 20 }));
 
       store.loadNotifications('u1');
 
@@ -54,7 +54,7 @@ describe('NotificationStore', () => {
         { id: 'n-2', userId: 'u1', type: 'PUSH', subject: 'T', body: 'B', status: 'PENDING', createdAt: new Date().toISOString() },
         { id: 'n-3', userId: 'u1', type: 'EMAIL', subject: 'T', body: 'B', status: 'PENDING', createdAt: new Date().toISOString() },
       ];
-      adapterSpy.listByUser.mockReturnValue(of({ data: mockNotifications, total: 3, page: 0, size: 20 }));
+      adapterSpy.listByUser.mockReturnValue(of({ items: mockNotifications, total: 3, page: 0, size: 20 }));
 
       store.loadNotifications('u1');
 
@@ -73,7 +73,7 @@ describe('NotificationStore', () => {
 
   describe('reset', () => {
     it('should clear all state', () => {
-      adapterSpy.listByUser.mockReturnValue(of({ data: [{ id: 'n1' }], total: 1, page: 0, size: 20 }));
+      adapterSpy.listByUser.mockReturnValue(of({ items: [{ id: 'n1' }], total: 1, page: 0, size: 20 }));
       store.loadNotifications('u1');
       expect(store.hasNotifications()).toBe(true);
 

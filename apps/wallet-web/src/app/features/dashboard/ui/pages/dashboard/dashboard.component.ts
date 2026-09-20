@@ -230,7 +230,7 @@ export class DashboardComponent implements OnInit {
     this.accountStore.loadAccounts(0, 10);
     this.paymentStore.loadPayments(0, 10);
 
-    const userInfo = this.authService.getCachedUserInfo();
+    const userInfo = this.authService.getUserInfo();
     if (userInfo?.sub) {
       this.notificationStore.loadNotifications(userInfo.sub, 0, 10);
     }

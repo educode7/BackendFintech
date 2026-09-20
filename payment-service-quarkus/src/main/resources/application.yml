@@ -66,18 +66,10 @@ quarkus:
     enabled: true
     application-type: service
     credentials:
-      secret: secret
+      secret: "p4PPO2LQkZfJfMOeQ4xYoXs541tpxmzC"
 
   smallrye-fault-tolerance:
     enabled: true
-
-  opentelemetry:
-    enabled: true
-    service:
-      name: payment-service
-    exporter:
-      otlp:
-        endpoint: http://localhost:4317
 
   micrometer:
     export:

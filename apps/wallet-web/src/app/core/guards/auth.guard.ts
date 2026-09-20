@@ -1,29 +1,22 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { map, catchError, of } from 'rxjs';
 import { AuthService } from '@core/infrastructure/auth.service';
 
 /**
- * Auth guard — redirects to /login if not authenticated.
+ * Auth guard — redirects to Keycloak login if not authenticated.
  *
- * Checks the user's identity via GET /auth/me (backend validates the access token).
- * Falls back to local JWT expiry check for fast path.
+ * Uses angular-oauth2-oidc's hasValidAccessToken() for fast local check.
+ * The token was validated by Keycloak during the Authorization Code + PKCE flow.
  */
 export const authGuard: CanActivateFn = () => {
-  const router = inject(Router);
   const authService = inject(AuthService);
+  const router = inject(Router);
 
-  // Fast path: cached identity is still valid
   if (authService.isAuthenticated()) {
     return true;
   }
 
-  // Slow path: fetch identity from backend (validates access token)
-  return authService.getUserInfo().pipe(
-    map(() => true),
-    catchError(() => {
-      router.navigate(['/login']);
-      return of(false);
-    })
-  );
+  // Redirect to Keycloak login
+  authService.login();
+  return false;
 };

@@ -40,15 +40,7 @@ quarkus:
     client-id: wallet-backend
     enabled: true
     credentials:
-      secret: secret
-
-  opentelemetry:
-    enabled: true
-    service:
-      name: notification-service
-    exporter:
-      otlp:
-        endpoint: http://localhost:4317
+      secret: "p4PPO2LQkZfJfMOeQ4xYoXs541tpxmzC"
 
   smallrye-health:
     enabled: true
