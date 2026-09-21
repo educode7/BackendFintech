@@ -7,15 +7,18 @@ import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 import { SimpleSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
-import { registerInstrumentations } from '@opentelemetry/instrumentation';
-import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
 import { environment } from '@env/environment';
 
 /**
  * Initialize OpenTelemetry tracing for the browser.
  *
- * - Development: ConsoleSpanExporter only (visible in DevTools, no collector needed)
+ * - Development: ConsoleSpanExporter only (visible in DevTools)
  * - Production: OTLP exporter + ConsoleSpanExporter
+ *
+ * Auto-instrumentation is NOT used because it patches fetch/XHR at the
+ * browser level and adds traceparent to ALL requests, including Keycloak
+ * OIDC requests that have strict CORS policies. The traceInterceptor
+ * handles trace propagation for backend API requests instead.
  *
  * Call once in app bootstrap (main.ts).
  */
@@ -54,19 +57,7 @@ export async function initializeTracing(): Promise<void> {
     }),
   });
 
-  registerInstrumentations({
-    tracerProvider: provider,
-    instrumentations: [
-      getWebAutoInstrumentations({
-        '@opentelemetry/instrumentation-fetch': {
-          propagateTraceHeaderCorsUrls: /.*/,
-          clearTimingResources: true,
-        },
-        '@opentelemetry/instrumentation-xml-http-request': {
-          propagateTraceHeaderCorsUrls: /.*/,
-          clearTimingResources: true,
-        },
-      }),
-    ],
-  });
+  // NOTE: Auto-instrumentation removed — it patches fetch/XHR globally
+  // and adds traceparent to Keycloak requests, causing CORS failures.
+  // Use the manual traceInterceptor for backend API requests instead.
 }
