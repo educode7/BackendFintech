@@ -74,7 +74,7 @@ describe('PaymentStore', () => {
       const mockPayment = { id: 'pay-new', accountId: 'a1', userId: 'u1', amount: 10, currency: 'USD', status: 'PENDING', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
       adapterSpy.process.mockReturnValue(of(mockPayment));
 
-      store.processPayment({ userId: 'u1', amount: { amount: '10', currency: 'USD' } });
+      store.processPayment({ accountId: 'a1', userId: 'u1', amount: { amount: '10', currency: 'USD' } });
 
       expect(store.payments().length).toBe(1);
       expect(store.payments()[0].id).toBe('pay-new');

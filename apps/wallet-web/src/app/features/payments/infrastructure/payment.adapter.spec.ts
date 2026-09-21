@@ -43,7 +43,7 @@ describe('PaymentAdapter', () => {
       httpPost.mockReturnValue(of(mockPayment));
 
       adapter.process(
-        { userId: 'user-1', amount: { amount: '10.00', currency: 'USD' } },
+        { accountId: 'acc-1', userId: 'user-1', amount: { amount: '10.00', currency: 'USD' } },
         'idem-1',
       ).subscribe((payment) => {
         expect(payment.id).toBe('pay-1');
@@ -53,7 +53,7 @@ describe('PaymentAdapter', () => {
       expect(httpPost).toHaveBeenCalledOnce();
       const [url, body, opts] = httpPost.mock.calls[0];
       expect(url).toBe(`${environment.apiGateway}/api/v1/payments`);
-      expect(body).toEqual({ userId: 'user-1', amount: { amount: '10.00', currency: 'USD' } });
+      expect(body).toEqual({ accountId: 'acc-1', userId: 'user-1', amount: { amount: '10.00', currency: 'USD' } });
       expect(opts.headers['Idempotency-Key']).toBe('idem-1');
     });
   });

@@ -57,7 +57,7 @@ export class PaymentStore {
     });
   }
 
-  processPayment(request: { userId: string; amount: { amount: string; currency: string } }): void {
+  processPayment(request: { accountId: string; userId: string; amount: { amount: string; currency: string } }): void {
     this._loading.set(true);
     this._error.set(null);
     const idempotencyKey = crypto.randomUUID();

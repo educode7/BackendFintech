@@ -20,6 +20,7 @@ export interface Money {
 export type PaymentStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
 export interface ProcessPaymentRequest {
+  accountId: string;
   userId: string;
   amount: Money;
 }

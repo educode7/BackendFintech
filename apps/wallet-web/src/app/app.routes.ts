@@ -29,6 +29,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'create',
+        loadComponent: () =>
+          import('@features/payments/ui/pages/payment-create/payment-create.component').then(
+            (m) => m.PaymentCreateComponent
+          ),
+      },
+      {
         path: ':id',
         loadComponent: () =>
           import('@features/payments/ui/pages/payment-detail/payment-detail.component').then(
