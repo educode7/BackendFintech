@@ -59,7 +59,8 @@
       "directAccessGrantsEnabled": false,
       "redirectUris": [
         "http://localhost:4200",
-        "http://localhost:4200/*"
+        "http://localhost:4200/*",
+        "http://localhost:4200/assets/silent-refresh.html"
       ],
       "webOrigins": [
         "http://localhost:4200"

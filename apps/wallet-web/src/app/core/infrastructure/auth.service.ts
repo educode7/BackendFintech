@@ -41,22 +41,43 @@ export class AuthService {
       oidc: true,
       strictDiscoveryDocumentValidation: false,
       sessionChecksEnabled: false,
-      showDebugInformation: false,
+      showDebugInformation: true,
+      // Silent refresh via iframe — restores session after page refresh
+      silentRefreshRedirectUri: `${window.location.origin}/assets/silent-refresh.html`,
+      useSilentRefresh: true,
+      silentRefreshTimeout: 5000,
+      // PKCE is required for public clients
     });
 
-    // Handle the OAuth callback (code exchange) — only processes the redirect
-    // if the URL contains an auth code. Does NOT auto-redirect to login.
-    const loginResult = await this.oauthService.loadDiscoveryDocumentAndTryLogin();
+    console.log('[AuthService] URL:', window.location.href);
 
-    // Set up user info if already authenticated (e.g. after callback)
+    // Load discovery document first
+    await this.oauthService.loadDiscoveryDocument();
+
+    // Try login from URL params (callback) — returns true if code was exchanged
+    const loginResult = await this.oauthService.tryLogin();
+    console.log('[AuthService] tryLogin result:', loginResult);
+
     if (this.oauthService.hasValidAccessToken()) {
+      console.log('[AuthService] Token after tryLogin — setting up user info');
       this.setupUserInfo();
-      // After successful callback, navigate to dashboard
       if (loginResult) {
         this.router.navigate(['/dashboard']);
       }
+      return;
     }
-    // If not authenticated, the login page handles the redirect.
+
+    // No token from callback — try silent refresh (iframe to Keycloak)
+    console.log('[AuthService] No token, attempting silent refresh...');
+    try {
+      await this.oauthService.silentRefresh();
+      console.log('[AuthService] Silent refresh result:', this.oauthService.hasValidAccessToken());
+      if (this.oauthService.hasValidAccessToken()) {
+        this.setupUserInfo();
+      }
+    } catch (e) {
+      console.log('[AuthService] Silent refresh failed (no active session):', e);
+    }
   }
 
   // ─── Login / Logout ─────────────────────────────────────
