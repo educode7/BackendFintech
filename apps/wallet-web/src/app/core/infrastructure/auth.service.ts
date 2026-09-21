@@ -38,12 +38,9 @@ export class AuthService {
       redirectUri: window.location.origin,
       scope: environment.oidc.scope,
       responseType: 'code',
-      silentRefreshRedirectUri: `${window.location.origin}/silent-refresh.html`,
-      useSilentRefresh: false,
-      silentRefreshTimeout: 5000,
       oidc: true,
       strictDiscoveryDocumentValidation: false,
-      sessionChecksEnabled: true,
+      sessionChecksEnabled: false,
       showDebugInformation: false,
     });
 
