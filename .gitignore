@@ -3,6 +3,12 @@ target/
 *.jar
 *.war
 *.ear
+compile-output.txt
+
+## Node / Vitest
+node_modules/
+.vite/
+results.json
 
 ## IDE
 .idea/
