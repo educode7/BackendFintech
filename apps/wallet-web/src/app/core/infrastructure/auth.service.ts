@@ -49,11 +49,15 @@ export class AuthService {
 
     // Handle the OAuth callback (code exchange) — only processes the redirect
     // if the URL contains an auth code. Does NOT auto-redirect to login.
-    await this.oauthService.loadDiscoveryDocumentAndTryLogin();
+    const loginResult = await this.oauthService.loadDiscoveryDocumentAndTryLogin();
 
     // Set up user info if already authenticated (e.g. after callback)
     if (this.oauthService.hasValidAccessToken()) {
       this.setupUserInfo();
+      // After successful callback, navigate to dashboard
+      if (loginResult) {
+        this.router.navigate(['/dashboard']);
+      }
     }
     // If not authenticated, the login page handles the redirect.
   }
