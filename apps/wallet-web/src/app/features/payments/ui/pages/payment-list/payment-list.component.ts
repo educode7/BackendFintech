@@ -12,11 +12,7 @@ import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
   standalone: true,
   imports: [PageHeaderComponent, LoadingSpinnerComponent, ErrorDisplayComponent, CurrencyPipe, RelativeTimePipe],
   template: `
-    <app-page-header title="Payments" subtitle="View and create payments" />
-
-    <div class="actions">
-      <button class="btn btn-primary" (click)="openCreate()">New Payment</button>
-    </div>
+    <app-page-header title="Payments" subtitle="View your payment history" />
 
     @if (store.loading()) {
       <app-loading-spinner message="Loading payments..." />
@@ -56,10 +52,6 @@ import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
     }
   `,
   styles: [`
-    .actions { margin-bottom: 1.5rem; }
-    .btn { padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 500; }
-    .btn-primary { background: #3b82f6; color: white; }
-    .btn-primary:hover { background: #2563eb; }
     .table-container { overflow-x: auto; }
     .data-table { width: 100%; border-collapse: collapse; }
     .data-table th, .data-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
@@ -81,10 +73,6 @@ export class PaymentListComponent implements OnInit {
 
   ngOnInit() {
     this.store.loadPayments();
-  }
-
-  openCreate() {
-    this.router.navigate(['/payments/new']);
   }
 
   viewDetail(id: string) {
