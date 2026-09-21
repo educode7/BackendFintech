@@ -16,7 +16,33 @@ public record PaymentResponse(
         String currency,
         String status,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        // Payment type
+        String paymentType,
+        // Beneficiary info
+        String beneficiaryName,
+        String beneficiaryDocumentType,
+        String beneficiaryDocumentNumber,
+        String beneficiaryAccountNumber,
+        String beneficiaryBankCode,
+        String beneficiaryBankName,
+        // Sender info
+        String senderName,
+        String senderDocumentType,
+        String senderDocumentNumber,
+        // Reference
+        String reference,
+        String externalReference,
+        // Routing
+        String channel,
+        // Processing
+        Instant processedAt,
+        Instant failedAt,
+        String failureReason,
+        int retryCount,
+        // Fees
+        BigDecimal feeAmount,
+        String feeCurrency
 ) {
     /**
      * Map domain entity to response DTO.
@@ -30,7 +56,33 @@ public record PaymentResponse(
                 payment.amount().currency(),
                 payment.status().name(),
                 payment.createdAt(),
-                payment.updatedAt()
+                payment.updatedAt(),
+                // Payment type
+                payment.paymentType(),
+                // Beneficiary info
+                payment.beneficiaryName(),
+                payment.beneficiaryDocumentType(),
+                payment.beneficiaryDocumentNumber(),
+                payment.beneficiaryAccountNumber(),
+                payment.beneficiaryBankCode(),
+                payment.beneficiaryBankName(),
+                // Sender info
+                payment.senderName(),
+                payment.senderDocumentType(),
+                payment.senderDocumentNumber(),
+                // Reference
+                payment.reference(),
+                payment.externalReference(),
+                // Routing
+                payment.channel(),
+                // Processing
+                payment.processedAt(),
+                payment.failedAt(),
+                payment.failureReason(),
+                payment.retryCount(),
+                // Fees
+                payment.feeAmount() != null ? payment.feeAmount().amount() : null,
+                payment.feeAmount() != null ? payment.feeAmount().currency() : null
         );
     }
 }

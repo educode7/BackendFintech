@@ -30,6 +30,9 @@ import com.wallet.account.application.AccountCommand;
 import com.wallet.account.application.AccountCommandService;
 import com.wallet.account.application.AccountQueryService;
 import com.wallet.account.application.AccountResponse;
+import com.wallet.shared.event.AccountData;
+import com.wallet.shared.event.AccountType;
+import com.wallet.shared.event.HolderDocumentType;
 import com.wallet.shared.api.PageResponse;
 import com.wallet.shared.money.Money;
 
@@ -73,14 +76,43 @@ public class AccountResource {
     @Operation(summary = "Open a new account")
     public Uni<Response> openAccount(@Valid OpenAccountRequest request, @Context UriInfo uriInfo) {
         Money initialBalance = new Money(request.initialBalance().amount(), request.initialBalance().currency());
+
+        // Build AccountData from request
+        AccountData accountData = buildAccountData(request);
+
         AccountCommand.OpenAccount command = new AccountCommand.OpenAccount(
-                request.userId(), initialBalance, null);
+                request.userId(), initialBalance, null, accountData);
 
         return commandService.openAccount(command)
                 .map(response -> {
                     URI location = uriInfo.getAbsolutePathBuilder().path(response.accountId()).build();
                     return Response.created(location).entity(response).build();
                 });
+    }
+
+    private AccountData buildAccountData(OpenAccountRequest request) {
+        return new AccountData(
+                request.accountNumber(),
+                request.accountType() != null ? AccountType.valueOf(request.accountType()) : null,
+                request.cci(),
+                request.iban(),
+                request.swiftBic(),
+                request.holderName(),
+                request.holderDocumentType() != null ? HolderDocumentType.valueOf(request.holderDocumentType()) : null,
+                request.holderDocumentNumber(),
+                request.holderEmail(),
+                request.holderPhone(),
+                request.bankCode(),
+                request.bankName(),
+                request.currency(),
+                request.country(),
+                null, // availableAmount — not in open request
+                null, // holdAmount — not in open request
+                request.overdraftLimit() != null ? new Money(new BigDecimal(request.overdraftLimit()), request.initialBalance().currency()) : null,
+                request.dailyLimit() != null ? new Money(new BigDecimal(request.dailyLimit()), request.initialBalance().currency()) : null,
+                request.monthlyLimit() != null ? new Money(new BigDecimal(request.monthlyLimit()), request.initialBalance().currency()) : null,
+                request.singleTransactionLimit() != null ? new Money(new BigDecimal(request.singleTransactionLimit()), request.initialBalance().currency()) : null
+        );
     }
 
     @GET
@@ -114,7 +146,25 @@ public class AccountResource {
 
     public record OpenAccountRequest(
             @NotBlank String userId,
-            @NotNull MoneyAmount initialBalance
+            @NotNull MoneyAmount initialBalance,
+            String accountNumber,
+            String accountType,
+            String cci,
+            String iban,
+            String swiftBic,
+            String holderName,
+            String holderDocumentType,
+            String holderDocumentNumber,
+            String holderEmail,
+            String holderPhone,
+            String bankCode,
+            String bankName,
+            String currency,
+            String country,
+            String dailyLimit,
+            String monthlyLimit,
+            String singleTransactionLimit,
+            String overdraftLimit
     ) {
         public record MoneyAmount(@NotNull BigDecimal amount, @NotBlank String currency) {}
     }

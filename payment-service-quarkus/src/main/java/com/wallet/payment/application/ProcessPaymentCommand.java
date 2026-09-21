@@ -11,7 +11,29 @@ public record ProcessPaymentCommand(
         String accountId,
         String userId,
         Money amount,
-        String idempotencyKey
+        String idempotencyKey,
+        // Payment type
+        String paymentType,
+        // Beneficiary info
+        String beneficiaryName,
+        String beneficiaryDocumentType,
+        String beneficiaryDocumentNumber,
+        String beneficiaryAccountNumber,
+        String beneficiaryBankCode,
+        String beneficiaryBankName,
+        // Sender info
+        String senderName,
+        String senderDocumentType,
+        String senderDocumentNumber,
+        // Reference
+        String reference,
+        String externalReference,
+        // Routing
+        String channel,
+        String ipAddress,
+        String userAgent,
+        // Fees
+        Money feeAmount
 ) {
     public ProcessPaymentCommand {
         if (accountId == null || accountId.isBlank()) {
@@ -29,5 +51,17 @@ public record ProcessPaymentCommand(
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new IllegalArgumentException("idempotencyKey must not be blank");
         }
+    }
+
+    /**
+     * Backward-compatible constructor for basic payments.
+     */
+    public ProcessPaymentCommand(String accountId, String userId, Money amount, String idempotencyKey) {
+        this(accountId, userId, amount, idempotencyKey,
+                null, null, null, null, null, null, null,
+                null, null, null,
+                null, null,
+                null, null, null,
+                null);
     }
 }

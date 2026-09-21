@@ -94,8 +94,40 @@ public class PaymentResource {
             String currency = amountJson.getString("currency");
 
             Money amount = new Money(amountValue, currency);
+
+            // Extended fields
+            String paymentType = json.getString("paymentType");
+            String beneficiaryName = json.getString("beneficiaryName");
+            String beneficiaryDocumentType = json.getString("beneficiaryDocumentType");
+            String beneficiaryDocumentNumber = json.getString("beneficiaryDocumentNumber");
+            String beneficiaryAccountNumber = json.getString("beneficiaryAccountNumber");
+            String beneficiaryBankCode = json.getString("beneficiaryBankCode");
+            String beneficiaryBankName = json.getString("beneficiaryBankName");
+            String senderName = json.getString("senderName");
+            String senderDocumentType = json.getString("senderDocumentType");
+            String senderDocumentNumber = json.getString("senderDocumentNumber");
+            String reference = json.getString("reference");
+            String externalReference = json.getString("externalReference");
+            String channel = json.getString("channel");
+            String ipAddress = json.getString("ipAddress");
+            String userAgent = json.getString("userAgent");
+
+            // Fee amount
+            Money feeAmount = null;
+            JsonObject feeJson = json.getJsonObject("feeAmount");
+            if (feeJson != null) {
+                feeAmount = new Money(new BigDecimal(feeJson.getString("amount")), feeJson.getString("currency"));
+            }
+
             ProcessPaymentCommand command = new ProcessPaymentCommand(
-                    accountId, userId, amount, idempotencyKey);
+                    accountId, userId, amount, idempotencyKey,
+                    paymentType,
+                    beneficiaryName, beneficiaryDocumentType, beneficiaryDocumentNumber,
+                    beneficiaryAccountNumber, beneficiaryBankCode, beneficiaryBankName,
+                    senderName, senderDocumentType, senderDocumentNumber,
+                    reference, externalReference,
+                    channel, ipAddress, userAgent,
+                    feeAmount);
 
             String correlationId = uriInfo.getRequestUri().toString();
 

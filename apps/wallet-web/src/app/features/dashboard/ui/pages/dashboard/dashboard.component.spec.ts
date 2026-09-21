@@ -84,10 +84,20 @@ describe('DashboardComponent', () => {
   });
 
   it('should display account count', () => {
-    mockAccountStore.accounts.set([
-      { accountId: '1', userId: 'u1', balanceAmount: 100, balanceCurrency: 'USD', status: 'OPEN', version: 1, lastUpdated: '2024-01-01' },
-      { accountId: '2', userId: 'u1', balanceAmount: 200, balanceCurrency: 'USD', status: 'OPEN', version: 1, lastUpdated: '2024-01-02' },
-    ]);
+    const mk = (id: string, bal: number) => ({
+      accountId: id, accountNumber: id, accountType: 'SAVINGS', cci: '', iban: '', swiftBic: '',
+      userId: 'u1', holderName: 'User', holderDocumentType: 'DNI', holderDocumentNumber: '123',
+      holderEmail: '', holderPhone: '', bankCode: '', bankName: '', currency: 'USD', country: 'US',
+      balanceAmount: bal, balanceCurrency: 'USD',
+      availableAmount: bal, availableAmountCurrency: 'USD',
+      holdAmount: 0, holdAmountCurrency: 'USD',
+      overdraftLimit: 0, overdraftLimitCurrency: 'USD',
+      dailyLimit: 0, dailyLimitCurrency: 'USD',
+      monthlyLimit: 0, monthlyLimitCurrency: 'USD',
+      singleTransactionLimit: 0, singleTransactionLimitCurrency: 'USD',
+      status: 'OPEN', activatedAt: '', closedAt: '', version: 1, lastUpdated: '2024-01-01',
+    });
+    mockAccountStore.accounts.set([mk('1', 100), mk('2', 200)]);
     const fixture = TestBed.createComponent(DashboardComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;

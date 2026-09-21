@@ -53,8 +53,8 @@ public class AccountCommandService {
     public Uni<AccountResponse> openAccount(@SpanAttribute("account.user_id") AccountCommand.OpenAccount command) {
         String accountId = com.wallet.shared.util.IdGenerator.newId();
 
-        // 1. Create aggregate
-        Account account = Account.open(accountId, command.userId(), command.initialBalance());
+        // 1. Create aggregate with AccountData
+        Account account = Account.open(accountId, command.userId(), command.initialBalance(), command.accountData());
 
         // 2. Append events to store (outbox — published by OutboxPoller)
         eventStore.appendEvents(accountId, account.getPendingEvents(), 0);
@@ -148,8 +148,11 @@ public class AccountCommandService {
 
         if (snapshotOpt.isPresent()) {
             AccountSnapshot snap = snapshotOpt.get();
+            // Reconstitute from snapshot with AccountData
+            com.wallet.shared.event.AccountData snapData = buildAccountDataFromSnapshot(snap);
             account = Account.reconstitute(snap.accountId(), snap.userId(),
-                    snap.balance(), Account.Status.valueOf(snap.status()), snap.version());
+                    snap.balance(), Account.Status.valueOf(snap.status()), snap.version(),
+                    snapData);
 
             // Only replay events after the snapshot version
             events = eventStore.loadEventsAfter(accountId, snap.version());
@@ -164,7 +167,7 @@ public class AccountCommandService {
             // Rebuild from first event
             com.wallet.shared.event.AccountEvent first = events.getFirst();
             if (first instanceof com.wallet.shared.event.AccountOpenedEvent opened) {
-                account = Account.open(opened.accountId(), opened.userId(), opened.initialBalance());
+                account = Account.open(opened.accountId(), opened.userId(), opened.initialBalance(), opened.accountData());
                 account.clearPendingEvents();
             } else {
                 return Uni.createFrom().failure(
@@ -185,6 +188,28 @@ public class AccountCommandService {
         }
 
         return Uni.createFrom().item(account);
+    }
+
+    /**
+     * Build AccountData from a snapshot (for reconstitution).
+     */
+    private com.wallet.shared.event.AccountData buildAccountDataFromSnapshot(AccountSnapshot snap) {
+        if (snap.accountNumber() == null && snap.holderName() == null) {
+            return null;
+        }
+        return new com.wallet.shared.event.AccountData(
+                snap.accountNumber(),
+                snap.accountType() != null ? com.wallet.shared.event.AccountType.valueOf(snap.accountType()) : null,
+                null, null, null, // cci, iban, swiftBic — not in snapshot
+                snap.holderName(),
+                snap.holderDocumentType() != null ? com.wallet.shared.event.HolderDocumentType.valueOf(snap.holderDocumentType()) : null,
+                snap.holderDocumentNumber(),
+                null, null, // holderEmail, holderPhone — not in snapshot
+                null, null, // bankCode, bankName — not in snapshot
+                snap.currency(), snap.country(),
+                null, null, null, // availableAmount, holdAmount, overdraftLimit
+                null, null, null // dailyLimit, monthlyLimit, singleTransactionLimit
+        );
     }
 
     /**

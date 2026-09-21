@@ -48,6 +48,13 @@ message OpenAccountResponse {
   AccountStatus status = 4;
   int64 version = 5;
   google.protobuf.Timestamp created_at = 6;
+  // Extended fields
+  string account_number = 7;
+  string account_type = 8;
+  string holder_name = 9;
+  string currency = 10;
+  string country = 11;
+  google.protobuf.Timestamp activated_at = 12;
 }
 
 message GetAccountRequest {
@@ -61,6 +68,23 @@ message GetAccountResponse {
   AccountStatus status = 4;
   int64 version = 5;
   google.protobuf.Timestamp last_updated = 6;
+  // Extended fields
+  string account_number = 7;
+  string account_type = 8;
+  string cci = 9;
+  string iban = 10;
+  string swift_bic = 11;
+  string holder_name = 12;
+  string holder_document_type = 13;
+  string holder_document_number = 14;
+  string holder_email = 15;
+  string holder_phone = 16;
+  string bank_code = 17;
+  string bank_name = 18;
+  string currency = 19;
+  string country = 20;
+  google.protobuf.Timestamp activated_at = 21;
+  google.protobuf.Timestamp closed_at = 22;
 }
 
 message DepositRequest {

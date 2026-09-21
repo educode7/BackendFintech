@@ -1,6 +1,7 @@
 package com.wallet.account.domain;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 import com.wallet.shared.money.Money;
 
@@ -14,7 +15,20 @@ public record AccountSnapshot(
         BigDecimal balanceAmount,
         String balanceCurrency,
         String status,
-        long version
+        long version,
+        // Identification
+        String accountNumber,
+        String accountType,
+        // Holder info
+        String holderName,
+        String holderDocumentType,
+        String holderDocumentNumber,
+        // Banking
+        String currency,
+        String country,
+        // Timestamps
+        Instant activatedAt,
+        Instant closedAt
 ) {
     public AccountSnapshot {
         if (accountId == null) throw new NullPointerException("accountId");
@@ -38,7 +52,20 @@ public record AccountSnapshot(
                 account.balance().amount(),
                 account.balance().currency(),
                 account.status().name(),
-                account.version()
+                account.version(),
+                // Identification
+                account.accountNumber(),
+                account.accountType() != null ? account.accountType().name() : null,
+                // Holder info
+                account.holderName(),
+                account.holderDocumentType() != null ? account.holderDocumentType().name() : null,
+                account.holderDocumentNumber(),
+                // Banking
+                account.currency(),
+                account.country(),
+                // Timestamps
+                account.activatedAt(),
+                account.closedAt()
         );
     }
 }

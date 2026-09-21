@@ -8,6 +8,25 @@ export interface Payment {
   amount: number;
   currency: string;
   status: PaymentStatus;
+  paymentType: string;
+  beneficiaryName: string;
+  beneficiaryDocumentType: string;
+  beneficiaryDocumentNumber: string;
+  beneficiaryAccountNumber: string;
+  beneficiaryBankCode: string;
+  beneficiaryBankName: string;
+  senderName: string;
+  senderDocumentType: string;
+  senderDocumentNumber: string;
+  reference: string;
+  externalReference: string;
+  channel: string;
+  processedAt: string;
+  failedAt: string;
+  failureReason: string;
+  retryCount: number;
+  feeAmount: number;
+  feeCurrency: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +42,15 @@ export interface ProcessPaymentRequest {
   accountId: string;
   userId: string;
   amount: Money;
+  paymentType?: string;
+  beneficiaryName?: string;
+  beneficiaryDocumentType?: string;
+  beneficiaryDocumentNumber?: string;
+  beneficiaryAccountNumber?: string;
+  beneficiaryBankCode?: string;
+  beneficiaryBankName?: string;
+  reference?: string;
+  channel?: string;
 }
 
 export interface PaymentPageResponse {

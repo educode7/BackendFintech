@@ -10,9 +10,17 @@ public record AccountOpenedEvent(
     String accountId,
     String userId,
     Money initialBalance,
-    EventMetadata metadata
+    EventMetadata metadata,
+    AccountData accountData
 ) implements AccountEvent {
 
     @Override
     public String accountId() { return accountId; }
+
+    /**
+     * Backward-compatible factory without AccountData.
+     */
+    public static AccountOpenedEvent of(String accountId, String userId, Money initialBalance, EventMetadata metadata) {
+        return new AccountOpenedEvent(accountId, userId, initialBalance, metadata, null);
+    }
 }

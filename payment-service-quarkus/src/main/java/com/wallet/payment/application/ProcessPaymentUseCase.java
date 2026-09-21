@@ -146,7 +146,15 @@ public class ProcessPaymentUseCase {
             java.time.Instant now = java.time.Instant.now();
             Payment payment = Payment.of(paymentId, command.accountId(), command.userId(),
                     command.amount(), command.idempotencyKey(),
-                    Payment.Status.COMPLETED, 0, now, now);
+                    Payment.Status.COMPLETED, 0, now, now,
+                    command.paymentType(),
+                    command.beneficiaryName(), command.beneficiaryDocumentType(), command.beneficiaryDocumentNumber(),
+                    command.beneficiaryAccountNumber(), command.beneficiaryBankCode(), command.beneficiaryBankName(),
+                    command.senderName(), command.senderDocumentType(), command.senderDocumentNumber(),
+                    command.reference(), command.externalReference(),
+                    command.channel(), command.ipAddress(), command.userAgent(),
+                    now, null, null, 0,
+                    command.feeAmount());
             log.infof("Payment created: id=%s, userId=%s, amount=%s, key=%s",
                     payment.id(), payment.userId(), payment.amount(), payment.idempotencyKey());
 
@@ -196,7 +204,12 @@ public class ProcessPaymentUseCase {
                         .put("amount", new io.vertx.core.json.JsonObject()
                                 .put("amount", payment.amount().amount().toPlainString())
                                 .put("currency", payment.amount().currency()))
-                        .put("status", payment.status().name()))
+                        .put("status", payment.status().name())
+                        .put("paymentType", payment.paymentType())
+                        .put("beneficiaryName", payment.beneficiaryName())
+                        .put("beneficiaryAccountNumber", payment.beneficiaryAccountNumber())
+                        .put("reference", payment.reference())
+                        .put("channel", payment.channel()))
                 .encode();
     }
 

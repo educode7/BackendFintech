@@ -9,6 +9,7 @@ import com.wallet.account.application.AccountCommand;
 import com.wallet.account.application.AccountCommandService;
 import com.wallet.account.application.AccountQueryService;
 import com.wallet.account.application.AccountResponse;
+import com.wallet.shared.event.AccountData;
 import com.wallet.account.domain.exception.AccountNotFoundException;
 import com.wallet.account.domain.exception.ConcurrentModificationException;
 import com.wallet.account.domain.exception.InsufficientFundsException;
@@ -41,7 +42,7 @@ public class AccountGrpcServiceImpl extends MutinyAccountServiceGrpc.AccountServ
                 request.getInitialBalance().getCurrency());
 
         AccountCommand.OpenAccount command = new AccountCommand.OpenAccount(
-                request.getUserId(), initialBalance, requestId);
+                request.getUserId(), initialBalance, requestId, null);
 
         return commandService.openAccount(command)
                 .map(this::toGrpcOpenResponse)
@@ -96,25 +97,51 @@ public class AccountGrpcServiceImpl extends MutinyAccountServiceGrpc.AccountServ
     }
 
     private OpenAccountResponse toGrpcOpenResponse(AccountResponse r) {
-        return OpenAccountResponse.newBuilder()
+        var builder = OpenAccountResponse.newBuilder()
                 .setAccountId(r.accountId())
                 .setUserId(r.userId())
                 .setBalance(Money.newBuilder().setAmount(r.balanceAmount().toPlainString()).setCurrency(r.balanceCurrency()).build())
                 .setStatus(mapStatus(r.status()))
                 .setVersion(r.version())
-                .setCreatedAt(toTimestamp(r.lastUpdated()))
-                .build();
+                .setCreatedAt(toTimestamp(r.lastUpdated()));
+
+        if (r.accountNumber() != null) builder.setAccountNumber(r.accountNumber());
+        if (r.accountType() != null) builder.setAccountType(r.accountType());
+        if (r.holderName() != null) builder.setHolderName(r.holderName());
+        if (r.currency() != null) builder.setCurrency(r.currency());
+        if (r.country() != null) builder.setCountry(r.country());
+        if (r.activatedAt() != null) builder.setActivatedAt(toTimestamp(r.activatedAt()));
+
+        return builder.build();
     }
 
     private GetAccountResponse toGrpcGetResponse(AccountResponse r) {
-        return GetAccountResponse.newBuilder()
+        var builder = GetAccountResponse.newBuilder()
                 .setAccountId(r.accountId())
                 .setUserId(r.userId())
                 .setBalance(Money.newBuilder().setAmount(r.balanceAmount().toPlainString()).setCurrency(r.balanceCurrency()).build())
                 .setStatus(mapStatus(r.status()))
                 .setVersion(r.version())
-                .setLastUpdated(toTimestamp(r.lastUpdated()))
-                .build();
+                .setLastUpdated(toTimestamp(r.lastUpdated()));
+
+        if (r.accountNumber() != null) builder.setAccountNumber(r.accountNumber());
+        if (r.accountType() != null) builder.setAccountType(r.accountType());
+        if (r.holderName() != null) builder.setHolderName(r.holderName());
+        if (r.holderEmail() != null) builder.setHolderEmail(r.holderEmail());
+        if (r.holderPhone() != null) builder.setHolderPhone(r.holderPhone());
+        if (r.bankCode() != null) builder.setBankCode(r.bankCode());
+        if (r.bankName() != null) builder.setBankName(r.bankName());
+        if (r.currency() != null) builder.setCurrency(r.currency());
+        if (r.country() != null) builder.setCountry(r.country());
+        if (r.cci() != null) builder.setCci(r.cci());
+        if (r.iban() != null) builder.setIban(r.iban());
+        if (r.swiftBic() != null) builder.setSwiftBic(r.swiftBic());
+        if (r.holderDocumentType() != null) builder.setHolderDocumentType(r.holderDocumentType());
+        if (r.holderDocumentNumber() != null) builder.setHolderDocumentNumber(r.holderDocumentNumber());
+        if (r.activatedAt() != null) builder.setActivatedAt(toTimestamp(r.activatedAt()));
+        if (r.closedAt() != null) builder.setClosedAt(toTimestamp(r.closedAt()));
+
+        return builder.build();
     }
 
     private DepositResponse toGrpcDepositResponse(AccountResponse r) {

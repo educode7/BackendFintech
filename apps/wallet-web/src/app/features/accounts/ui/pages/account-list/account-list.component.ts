@@ -26,11 +26,38 @@ import { CurrencyPipe } from '@shared/pipes/currency.pipe';
         @for (account of store.accounts(); track account.accountId) {
           <div class="account-card" (click)="viewDetail(account.accountId)">
             <div class="account-header">
-              <span class="mono">{{ account.accountId }}</span>
+              <span class="account-number">{{ account.accountNumber || account.accountId }}</span>
               <span class="balance">{{ account.balanceAmount | currency:account.balanceCurrency }}</span>
             </div>
+            <div class="account-body">
+              @if (account.holderName) {
+                <div class="info-row">
+                  <span class="label">Holder</span>
+                  <span class="value">{{ account.holderName }}</span>
+                </div>
+              }
+              @if (account.accountType) {
+                <div class="info-row">
+                  <span class="label">Type</span>
+                  <span class="value badge">{{ account.accountType }}</span>
+                </div>
+              }
+              @if (account.currency) {
+                <div class="info-row">
+                  <span class="label">Currency</span>
+                  <span class="value">{{ account.currency }}</span>
+                </div>
+              }
+              @if (account.country) {
+                <div class="info-row">
+                  <span class="label">Country</span>
+                  <span class="value">{{ account.country }}</span>
+                </div>
+              }
+            </div>
             <div class="account-footer">
-              <span>v{{ account.version }}</span>
+              <span class="status" [class.open]="account.status === 'OPEN'" [class.closed]="account.status === 'CLOSED'">{{ account.status }}</span>
+              <span class="version">v{{ account.version }}</span>
             </div>
           </div>
         } @empty {
@@ -50,9 +77,17 @@ import { CurrencyPipe } from '@shared/pipes/currency.pipe';
     }
     .account-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .account-header { display: flex; justify-content: space-between; align-items: center; }
-    .mono { font-family: monospace; font-size: 0.875rem; color: #6b7280; }
+    .account-number { font-family: monospace; font-size: 0.875rem; color: #6b7280; }
     .balance { font-size: 1.25rem; font-weight: 600; color: #111827; }
-    .account-footer { margin-top: 0.75rem; color: #9ca3af; font-size: 0.75rem; }
+    .account-body { margin-top: 0.75rem; }
+    .info-row { display: flex; justify-content: space-between; padding: 0.25rem 0; }
+    .label { color: #9ca3af; font-size: 0.75rem; }
+    .value { color: #374151; font-size: 0.875rem; }
+    .badge { background: #f3f4f6; padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; }
+    .account-footer { margin-top: 0.75rem; display: flex; justify-content: space-between; color: #9ca3af; font-size: 0.75rem; }
+    .status { font-weight: 500; }
+    .status.open { color: #059669; }
+    .status.closed { color: #dc2626; }
     .empty { text-align: center; color: #999; grid-column: 1/-1; padding: 2rem; }
   `],
 })
