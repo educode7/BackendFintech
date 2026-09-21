@@ -17,3 +17,18 @@ export const authGuard: CanActivateFn = () => {
   // Redirect to login page (root route)
   return router.createUrlTree(['/']);
 };
+
+/**
+ * Login guard — redirects to dashboard if already authenticated.
+ * Prevents showing the login page to users with an active session.
+ */
+export const loginGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (authService.isAuthenticated()) {
+    return router.createUrlTree(['/dashboard']);
+  }
+
+  return true;
+};

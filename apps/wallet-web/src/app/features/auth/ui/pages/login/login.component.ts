@@ -1,5 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, inject } from '@angular/core';
 import { AuthService } from '@core/infrastructure/auth.service';
 
 @Component({
@@ -175,16 +174,9 @@ import { AuthService } from '@core/infrastructure/auth.service';
     }
   `],
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent {
   private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
   loading = false;
-
-  ngOnInit() {
-    if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/dashboard']);
-    }
-  }
 
   login(): void {
     this.loading = true;
