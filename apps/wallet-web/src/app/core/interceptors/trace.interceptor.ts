@@ -10,6 +10,11 @@ import { LoggerService } from '@core/infrastructure/logger.service';
  * Otherwise generates a new traceparent header manually.
  */
 export const traceInterceptor: HttpInterceptorFn = (req, next) => {
+  // Skip Keycloak/OIDC endpoints — CORS doesn't allow custom headers
+  if (req.url.includes('/realms/') || req.url.includes('/protocol/')) {
+    return next(req);
+  }
+
   const logger = inject(LoggerService);
   const tracer = trace.getTracer('wallet-web');
 
