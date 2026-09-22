@@ -71,8 +71,8 @@ First review boundary: branch point `98ef4b4`. Chain: **stacked-to-main** — if
 
 ## Acceptance criteria
 - [x] Grafana boots with Prometheus/Loki/Tempo datasources + dashboard, zero manual clicks (static: provisioning mounted, uids aligned; runtime pending stack start)
-- [ ] One request = one trace including browser span, queryable in Grafana Explore → Tempo (runtime verification pending stack start)
-- [x] Prometheus scrapes pg_stat_statements metrics; dashboard shows top slow queries (static wiring complete; runtime pending)
+- [x] One request = one trace including browser span, queryable in Grafana Explore → Tempo (runtime: e.g. `e7527f57204568b6f3287b298c31e673` services=`api-gateway+notification-service`; synthetic browser OTLP `aa11bb22cc33dd44ee55ff6677889900` root=`wallet-web`; Grafana proxy `/api/search` and `/api/traces/<id>` return the linked trace)
+- [x] Prometheus scrapes pg_stat_statements metrics; dashboard shows top slow queries (native collector `--collector.stat_statements`; targets health=up; PromQL `topk(10, (seconds/calls)*1000 * on(queryid,db) group_left(query) query_id)` returns rows)
 - [x] All verification commands pass (docker CLI available and used)
 
 ## Progress
@@ -85,15 +85,23 @@ First review boundary: branch point `98ef4b4`. Chain: **stacked-to-main** — if
 - [x] C2 `84b5684` — wallet-web real browser spans via OTLP
 - [x] C3 `0d13ae5` — traceId in Quarkus log patterns (landed after C1; commit originally mislabeled, message amended before push)
 - [x] C4 `8e03d1d` — dashboard panels + slow-SQL panel
-- Commit order note: history is C1 → C3 → C2 → C4 due to a mid-flight index race; content per unit is correct. First review boundary remains branch point `98ef4b4`.
+- [x] Docs `78085a2` — record real work-unit commit hashes
+- [x] C5 `a2206c6` — Tempo 3.x schema (remove top-level `ingester`/`compactor`)
+- [x] C6 `c83b47d` — gateway injects W3C `traceparent` on proxied requests (raw `HttpClient` is not auto-instrumented)
+- [x] C7 `babb405` — native `stat_statements` collector + Prometheus `--web.enable-remote-write-receiver` (Prometheus 3.x dropped `--enable-feature=remote-write-receiver`) + dashboard PromQL join on `(queryid, db)`
+- Commit order note: history is C1 → C3 → C2 → C4 → docs → C5 → C6 → C7; content per unit is correct. First review boundary remains branch point `98ef4b4`.
 
 ## Known environmental / follow-up notes
-- **Existing `postgres-data` volume**: initdb scripts only run on an empty volume → run manually after up: `psql -d <db> -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"` for payments_db, wallet, notifications_db (and accounts_db if used), or reset the volume. The `shared_preload_libraries` change recreates the container anyway.
+- **Existing `postgres-data` volume**: initdb scripts only run on an empty volume → run manually after up: `psql -d <db> -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"` for payments_db, wallet, notifications_db (and accounts_db if used), or reset the volume. The `shared_preload_libraries` change recreates the container anyway. Runtime confirmed: extension present on wallet/payments_db/notifications_db; `accounts_db` was never created (out of active scope).
+- **`--extend.query-path` returns HTTP 500** on `prometheuscommunity/postgres-exporter:latest` for this query file and is deprecated upstream. Switched to native `--collector.stat_statements` (+ `include_query`, `limit=100`). Native metrics: `pg_stat_statements_{seconds,calls,rows}_total`, `pg_stat_statements_query_id` (label `query`). Mean exec time is computed in PromQL, not exported as `mean_exec_time`. `exporter-queries.yml` retained as history-only, no longer mounted.
+- **Prometheus 3.x remote-write**: must use `--web.enable-remote-write-receiver`; the older `--enable-feature=remote-write-receiver` is ignored → Tempo metrics_generator was getting 404 until C7. Span-metrics/service-graphs now present (`traces_spanmetrics_*`, `traces_service_graph_*`).
 - **`angular.json` has no `fileReplacements`**: `environment.prod.ts` is dead config; `environment.production` is always false (out of T3 scope, pre-existing — affects `apiGateway` in real prod builds; candidate follow-up task).
 - Grafana provisioning `$$` interpolation and tracesToLogsV2/tracesToMetrics queries are doc-verified, not runtime-executed.
-- Exemplars: `send_exemplars: true` set; add `--enable-feature=exemplar-storage` to prometheus later only if exemplars don't appear.
+- Exemplars: `send_exemplars: true` set; add `--web.enable-feature=exemplar-storage` to prometheus later only if exemplars don't appear.
 - Pre-existing dirty files never staged: `.atl/skill-registry.*`, `openspec/changes/`, `test-payment-flow.ps1`.
 - Preserved: CorrelationContext, CorrelationIdFilter, correlation/request/idempotency interceptors.
+- Browser E2E: synthetic OTLP POST verified (200 `{"partialSuccess":{}}`); real `ng serve` + browser session not run this round — optional follow-up for a live SPA root span sharing a Trace ID with a backend hop.
+- Virtual-thread logs show empty `traceId=` (MDC does not propagate to `Thread.startVirtualThread`); span context still correct on the request threads.
 
 ## Notes
 - Correlation helpers already exist — intact.
