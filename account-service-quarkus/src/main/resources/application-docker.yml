@@ -24,3 +24,10 @@ quarkus:
     auth-server-url: http://keycloak:8180/realms/wallet
     token:
       issuer: http://localhost:8180/realms/wallet
+
+  otel:
+    enabled: true
+    exporter:
+      otlp:
+        protocol: grpc
+        endpoint: http://otel-collector:4317

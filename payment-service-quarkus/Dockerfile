@@ -5,6 +5,7 @@ COPY docker-maven-settings.xml /root/.m2/settings.xml
 ARG QUARKUS_PROFILE=docker
 ENV QUARKUS_PROFILE=${QUARKUS_PROFILE}
 ARG OIDC_AUTH_SERVER_URL=http://keycloak:8180/realms/wallet
+ARG OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
 COPY pom.xml .
 COPY shared/pom.xml shared/
 COPY api-gateway-quarkus/pom.xml api-gateway-quarkus/
@@ -14,7 +15,7 @@ COPY notification-service-quarkus/pom.xml notification-service-quarkus/
 COPY auth-service-quarkus/pom.xml auth-service-quarkus/
 COPY shared/ shared/
 COPY payment-service-quarkus/ payment-service-quarkus/
-RUN --mount=type=cache,target=/root/.m2/repository mvn clean package -pl payment-service-quarkus -am -DskipTests -U -Dquarkus.profile=docker -Dquarkus.oidc.auth-server-url=${OIDC_AUTH_SERVER_URL}
+RUN --mount=type=cache,target=/root/.m2/repository mvn clean package -pl payment-service-quarkus -am -DskipTests -U -Dquarkus.profile=docker -Dquarkus.oidc.auth-server-url=${OIDC_AUTH_SERVER_URL} -Dquarkus.otel.exporter.otlp.endpoint=${OTEL_EXPORTER_OTLP_ENDPOINT} -Dquarkus.otel.exporter.otlp.protocol=grpc
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app

@@ -92,6 +92,13 @@ quarkus:
       version: "1.0.0"
     path: /q/openapi
 
+  otel:
+    enabled: true
+    exporter:
+      otlp:
+        protocol: grpc
+        endpoint: http://otel-collector:4317
+
   log:
     console:
       enable: true

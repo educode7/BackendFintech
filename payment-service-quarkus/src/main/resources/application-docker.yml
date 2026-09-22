@@ -25,6 +25,13 @@ quarkus:
     token:
       issuer: http://localhost:8180/realms/wallet
 
+  otel:
+    enabled: true
+    exporter:
+      otlp:
+        protocol: grpc
+        endpoint: http://otel-collector:4317
+
 wallet:
   idempotency:
     ttl-hours: 24

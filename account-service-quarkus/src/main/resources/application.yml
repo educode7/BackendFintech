@@ -81,6 +81,13 @@ quarkus:
       description: Event-sourced Account aggregate with CQRS
       version: "1.0.0"
 
+  otel:
+    enabled: true
+    exporter:
+      otlp:
+        protocol: grpc
+        endpoint: http://otel-collector:4317
+
   log:
     console:
       enable: true

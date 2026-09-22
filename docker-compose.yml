@@ -154,12 +154,14 @@ services:
       QUARKUS_OIDC_CLIENT_ID: wallet-backend
       QUARKUS_OIDC_APPLICATION_TYPE: service
       QUARKUS_OPENTELEMETRY_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       QUARKUS_SMALLRYE_HEALTH_ENABLED: "true"
       WALLET_GATEWAY_ROUTES_PAYMENT_SERVICE_URL: http://payment-service:8081
       WALLET_GATEWAY_ROUTES_ACCOUNT_SERVICE_URL: http://account-service:8082
       WALLET_GATEWAY_ROUTES_NOTIFICATION_SERVICE_URL: http://notification-service:8083
       WALLET_GATEWAY_ROUTES_AUTH_SERVICE_URL: http://auth-service:8084
-    command: ["-Dquarkus.profile=docker", "-Dkafka.bootstrap.servers=kafka:9092", "-jar", "quarkus-app/quarkus-run.jar"]
+    command: ["-Dquarkus.profile=docker", "-Dkafka.bootstrap.servers=kafka:9092", "-Dotel.exporter.otlp.endpoint=http://otel-collector:4317", "-jar", "quarkus-app/quarkus-run.jar"]
     depends_on:
       config-service:
         condition: service_healthy
@@ -194,8 +196,10 @@ services:
       QUARKUS_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       QUARKUS_OIDC_AUTH_SERVER_URL: http://keycloak:8180/realms/wallet
       QUARKUS_OPENTELEMETRY_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       WALLET_IDEMPOTENCY_TTL_HOURS: "24"
-    command: ["-Dquarkus.profile=docker", "-Dkafka.bootstrap.servers=kafka:9092", "-jar", "quarkus-app/quarkus-run.jar"]
+    command: ["-Dquarkus.profile=docker", "-Dkafka.bootstrap.servers=kafka:9092", "-Dotel.exporter.otlp.endpoint=http://otel-collector:4317", "-jar", "quarkus-app/quarkus-run.jar"]
     depends_on:
       config-service:
         condition: service_healthy
@@ -228,7 +232,9 @@ services:
       QUARKUS_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       QUARKUS_OIDC_AUTH_SERVER_URL: http://keycloak:8180/realms/wallet
       QUARKUS_OPENTELEMETRY_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
-    command: ["-Dquarkus.profile=docker", "-Dkafka.bootstrap.servers=kafka:9092", "-jar", "quarkus-app/quarkus-run.jar"]
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    command: ["-Dquarkus.profile=docker", "-Dkafka.bootstrap.servers=kafka:9092", "-Dotel.exporter.otlp.endpoint=http://otel-collector:4317", "-jar", "quarkus-app/quarkus-run.jar"]
     depends_on:
       config-service:
         condition: service_healthy
@@ -260,7 +266,9 @@ services:
       QUARKUS_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       QUARKUS_OIDC_AUTH_SERVER_URL: http://keycloak:8180/realms/wallet
       QUARKUS_OPENTELEMETRY_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
-    command: ["-Dquarkus.profile=docker", "-Dkafka.bootstrap.servers=kafka:9092", "-jar", "quarkus-app/quarkus-run.jar"]
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    command: ["-Dquarkus.profile=docker", "-Dkafka.bootstrap.servers=kafka:9092", "-Dotel.exporter.otlp.endpoint=http://otel-collector:4317", "-jar", "quarkus-app/quarkus-run.jar"]
     depends_on:
       config-service:
         condition: service_healthy
@@ -289,8 +297,10 @@ services:
       QUARKUS_OIDC_TOKEN_ISSUER: http://localhost:8180/realms/wallet
       QUARKUS_REDIS_HOSTS: redis://redis:6379
       QUARKUS_OPENTELEMETRY_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       QUARKUS_SMALLRYE_HEALTH_ENABLED: "true"
-    command: ["-Dquarkus.profile=docker", "-Dkafka.bootstrap.servers=kafka:9092", "-jar", "quarkus-app/quarkus-run.jar"]
+    command: ["-Dquarkus.profile=docker", "-Dkafka.bootstrap.servers=kafka:9092", "-Dotel.exporter.otlp.endpoint=http://otel-collector:4317", "-jar", "quarkus-app/quarkus-run.jar"]
     depends_on:
       config-service:
         condition: service_healthy
@@ -322,9 +332,36 @@ services:
     ports:
       - "3000:3000"
     environment:
+      GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana-data:/var/lib/grafana
+    networks:
+      - wallet-net
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: wallet-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - wallet-net
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.4.2
+    container_name: wallet-promtail
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
     networks:
       - wallet-net
     restart: unless-stopped
@@ -339,3 +376,4 @@ volumes:
   kafka-data:
   prometheus-data:
   grafana-data:
+  loki-data:
