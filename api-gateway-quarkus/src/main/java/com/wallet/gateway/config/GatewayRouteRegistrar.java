@@ -18,6 +18,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapSetter;
+
 /**
  * Registers gateway proxy routes on the Vert.x Router at startup.
  * Uses a Vert.x BodyHandler to capture the request body before RESTEasy Reactive consumes it,
@@ -27,6 +31,19 @@ import java.time.Duration;
 public class GatewayRouteRegistrar {
 
     private static final Logger log = Logger.getLogger(GatewayRouteRegistrar.class);
+
+    /**
+     * Injects W3C {@code traceparent}/{@code tracestate} into the outbound
+     * {@link HttpRequest.Builder}. Raw {@code java.net.http.HttpClient} is not
+     * auto-instrumented by Quarkus OpenTelemetry, so without this the gateway
+     * starts a root span but the backend opens a disconnected trace.
+     */
+    private static final TextMapSetter<HttpRequest.Builder> OTEL_HEADER_SETTER =
+            (builder, key, value) -> {
+                if (key != null && value != null) {
+                    builder.header(key, value);
+                }
+            };
 
     private final HttpClient httpClient;
     private final Vertx vertx;
@@ -146,6 +163,12 @@ public class GatewayRouteRegistrar {
                 reqBuilder.header(key, entry.getValue());
             }
         });
+
+        // After copying inbound headers, inject the gateway's active span so the
+        // backend continues the SAME trace (overrides any inbound traceparent).
+        GlobalOpenTelemetry.getPropagators()
+                .getTextMapPropagator()
+                .inject(Context.current(), reqBuilder, OTEL_HEADER_SETTER);
 
         // Set method and body
         String method = ctx.request().method().name();
