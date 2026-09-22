@@ -82,9 +82,10 @@ First review boundary: branch point `98ef4b4`. Chain: **stacked-to-main** — if
 - [x] Parent verification: compose config spot-check OK; dashboard JSON OK; wallet-web 231 tests passed; structural readback PASS
 - [x] Clone review disabled (free-tier provider blocked all bound captures) → ordinary checks only
 - [x] C1 `cc86b88` — Grafana provisioning, Tempo backend, slow-query metrics
-- [x] C2 `1ef8e8d` — wallet-web real browser spans via OTLP
-- [x] C3 `7b8ec9e` — traceId in Quarkus log patterns
-- [x] C4 `cf255d6` — dashboard panels + slow-SQL panel
+- [x] C2 `84b5684` — wallet-web real browser spans via OTLP
+- [x] C3 `0d13ae5` — traceId in Quarkus log patterns (landed after C1; commit originally mislabeled, message amended before push)
+- [x] C4 `8e03d1d` — dashboard panels + slow-SQL panel
+- Commit order note: history is C1 → C3 → C2 → C4 due to a mid-flight index race; content per unit is correct. First review boundary remains branch point `98ef4b4`.
 
 ## Known environmental / follow-up notes
 - **Existing `postgres-data` volume**: initdb scripts only run on an empty volume → run manually after up: `psql -d <db> -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"` for payments_db, wallet, notifications_db (and accounts_db if used), or reset the volume. The `shared_preload_libraries` change recreates the container anyway.
