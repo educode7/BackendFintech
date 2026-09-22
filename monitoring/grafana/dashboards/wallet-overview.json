@@ -78,10 +78,11 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
       "targets": [
         {
-          "expr": "topk(10, pg_stat_statements_mean_exec_time)",
+          "expr": "topk(10, (pg_stat_statements_seconds_total / pg_stat_statements_calls_total) * 1000 * on(queryid, db) group_left(query) pg_stat_statements_query_id)",
           "format": "table",
           "instant": true,
-          "legendFormat": "{{query}}"
+          "legendFormat": "{{query}}",
+          "refId": "A"
         }
       ],
       "fieldConfig": {

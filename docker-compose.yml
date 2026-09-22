@@ -144,15 +144,18 @@ services:
       - wallet-net
     restart: unless-stopped
 
+  # Native stat_statements collector (not the deprecated --extend.query-path).
+  # Exposes pg_stat_statements_{seconds,calls,rows}_total + query_id mapping;
+  # dashboard computes mean ms as (seconds/calls)*1000 joined on queryid.
   postgres-exporter-wallet:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: wallet-postgres-exporter-wallet
     environment:
       DATA_SOURCE_NAME: "postgresql://wallet:change-me@postgres:5432/wallet?sslmode=disable"
     command:
-      - --extend.query-path=/etc/postgres_exporter/queries.yml
-    volumes:
-      - ./monitoring/postgres/exporter-queries.yml:/etc/postgres_exporter/queries.yml:ro
+      - --collector.stat_statements
+      - --collector.stat_statements.include_query
+      - --collector.stat_statements.limit=100
     depends_on:
       postgres:
         condition: service_healthy
@@ -166,9 +169,9 @@ services:
     environment:
       DATA_SOURCE_NAME: "postgresql://wallet:change-me@postgres:5432/payments_db?sslmode=disable"
     command:
-      - --extend.query-path=/etc/postgres_exporter/queries.yml
-    volumes:
-      - ./monitoring/postgres/exporter-queries.yml:/etc/postgres_exporter/queries.yml:ro
+      - --collector.stat_statements
+      - --collector.stat_statements.include_query
+      - --collector.stat_statements.limit=100
     depends_on:
       postgres:
         condition: service_healthy
@@ -182,9 +185,9 @@ services:
     environment:
       DATA_SOURCE_NAME: "postgresql://wallet:change-me@postgres:5432/notifications_db?sslmode=disable"
     command:
-      - --extend.query-path=/etc/postgres_exporter/queries.yml
-    volumes:
-      - ./monitoring/postgres/exporter-queries.yml:/etc/postgres_exporter/queries.yml:ro
+      - --collector.stat_statements
+      - --collector.stat_statements.include_query
+      - --collector.stat_statements.limit=100
     depends_on:
       postgres:
         condition: service_healthy
@@ -370,12 +373,12 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: wallet-prometheus
-    # remote-write-receiver accepts metrics_generator remote_write from Tempo
-    # (exemplars included). Other flags mirror the image's default CMD.
+    # Prometheus 3.x: remote-write receiver is a stable web flag, not an
+    # experimental feature flag. Accepts metrics_generator remote_write from Tempo.
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
-      - --enable-feature=remote-write-receiver
+      - --web.enable-remote-write-receiver
     ports:
       - "9090:9090"
     volumes:
