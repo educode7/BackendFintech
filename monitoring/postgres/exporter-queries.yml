@@ -1,0 +1,25 @@
+# Custom queries for postgres-exporter (mounted by every postgres-exporter-*
+# service in docker-compose.yml via --extend.query-path).
+# Requires shared_preload_libraries=pg_stat_statements (postgres command) and
+# CREATE EXTENSION pg_stat_statements in each database (init script).
+pg_stat_statements:
+  query: |
+    SELECT regexp_replace(left(query, 300), '\s+', ' ', 'g') AS query,
+           calls,
+           mean_exec_time,
+           total_exec_time
+    FROM pg_stat_statements
+    WHERE query NOT ILIKE '%pg_stat_statements%'
+  metrics:
+    - query:
+        usage: "LABEL"
+        description: "SQL statement text (normalized, whitespace-collapsed, truncated to 300 chars)"
+    - calls:
+        usage: "COUNTER"
+        description: "Number of times the statement has been executed"
+    - mean_exec_time:
+        usage: "GAUGE"
+        description: "Mean statement execution time in milliseconds"
+    - total_exec_time:
+        usage: "COUNTER"
+        description: "Total statement execution time in milliseconds"

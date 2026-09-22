@@ -32,3 +32,13 @@ scrape_configs:
     metrics_path: /q/metrics
     static_configs:
       - targets: ["auth-service:8084"]
+
+  # pg_stat_statements exporters — one instance per app database.
+  - job_name: postgres-exporter
+    static_configs:
+      - targets: ["postgres-exporter-wallet:9187"]
+        labels: { db: "wallet" }
+      - targets: ["postgres-exporter-payments:9187"]
+        labels: { db: "payments_db" }
+      - targets: ["postgres-exporter-notifications:9187"]
+        labels: { db: "notifications_db" }

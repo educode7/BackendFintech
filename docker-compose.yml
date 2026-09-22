@@ -9,8 +9,10 @@ services:
       POSTGRES_PASSWORD: change-me
     ports:
       - "5432:5432"
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements"]
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./init-postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U wallet -d wallet"]
       interval: 5s
@@ -127,14 +129,65 @@ services:
       - wallet-net
     restart: unless-stopped
 
-  jaeger:
-    image: jaegertracing/all-in-one:1.76.0
-    container_name: wallet-jaeger
-    environment:
-      COLLECTOR_OTLP_ENABLED: "true"
+  tempo:
+    image: grafana/tempo:latest
+    container_name: wallet-tempo
+    command: ["-config.file=/etc/tempo.yml"]
+    # OTLP receivers (4317/4318) are reachable at tempo:4317/tempo:4318 inside
+    # wallet-net only — host 4317/4318 stay published by otel-collector.
     ports:
-      - "16686:16686" # Jaeger UI
-      - "14250:14250"
+      - "3200:3200"
+    volumes:
+      - ./monitoring/tempo/tempo.yml:/etc/tempo.yml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - wallet-net
+    restart: unless-stopped
+
+  postgres-exporter-wallet:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: wallet-postgres-exporter-wallet
+    environment:
+      DATA_SOURCE_NAME: "postgresql://wallet:change-me@postgres:5432/wallet?sslmode=disable"
+    command:
+      - --extend.query-path=/etc/postgres_exporter/queries.yml
+    volumes:
+      - ./monitoring/postgres/exporter-queries.yml:/etc/postgres_exporter/queries.yml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wallet-net
+    restart: unless-stopped
+
+  postgres-exporter-payments:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: wallet-postgres-exporter-payments
+    environment:
+      DATA_SOURCE_NAME: "postgresql://wallet:change-me@postgres:5432/payments_db?sslmode=disable"
+    command:
+      - --extend.query-path=/etc/postgres_exporter/queries.yml
+    volumes:
+      - ./monitoring/postgres/exporter-queries.yml:/etc/postgres_exporter/queries.yml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wallet-net
+    restart: unless-stopped
+
+  postgres-exporter-notifications:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: wallet-postgres-exporter-notifications
+    environment:
+      DATA_SOURCE_NAME: "postgresql://wallet:change-me@postgres:5432/notifications_db?sslmode=disable"
+    command:
+      - --extend.query-path=/etc/postgres_exporter/queries.yml
+    volumes:
+      - ./monitoring/postgres/exporter-queries.yml:/etc/postgres_exporter/queries.yml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - wallet-net
     restart: unless-stopped
@@ -317,6 +370,12 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: wallet-prometheus
+    # remote-write-receiver accepts metrics_generator remote_write from Tempo
+    # (exemplars included). Other flags mirror the image's default CMD.
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --enable-feature=remote-write-receiver
     ports:
       - "9090:9090"
     volumes:
@@ -337,6 +396,8 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     networks:
       - wallet-net
     restart: unless-stopped
@@ -377,3 +438,4 @@ volumes:
   prometheus-data:
   grafana-data:
   loki-data:
+  tempo-data:
