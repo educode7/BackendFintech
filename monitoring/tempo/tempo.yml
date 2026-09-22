@@ -1,7 +1,9 @@
-# Tempo — single binary (monolithic / target=all).
+# Tempo — single binary (monolithic / target=all), Tempo 3.x schema.
 # Receives OTLP from otel-collector (tempo:4317 / tempo:4318 inside wallet-net).
 # metrics_generator remote_write/registry/storage are prepared here; processors
-# are enabled in T6 via overrides.defaults.metrics_generator.processors.
+# are enabled via overrides.defaults.metrics_generator.processors.
+# Tempo 3.x removed top-level `ingester:` and `compactor:`; retention lives under
+# backend_scheduler/backend_worker.
 stream_over_http_enabled: true
 
 server:
@@ -16,10 +18,13 @@ distributor:
         http:
           endpoint: "0.0.0.0:4318"
 
-ingester:
-  max_block_duration: 5m
+backend_scheduler:
+  provider:
+    compaction:
+      compaction:
+        block_retention: 24h
 
-compactor:
+backend_worker:
   compaction:
     block_retention: 24h
 
