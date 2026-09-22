@@ -12,13 +12,15 @@ import { environment } from '@env/environment';
 /**
  * Initialize OpenTelemetry tracing for the browser.
  *
- * - Development: ConsoleSpanExporter only (visible in DevTools)
- * - Production: OTLP exporter + ConsoleSpanExporter
+ * - Always exports spans via OTLP to environment.otelEndpoint (the
+ *   host-published otel-collector), so the browser appears in traces in
+ *   both development and production.
+ * - Also keeps ConsoleSpanExporter (visible in DevTools).
  *
  * Auto-instrumentation is NOT used because it patches fetch/XHR at the
  * browser level and adds traceparent to ALL requests, including Keycloak
  * OIDC requests that have strict CORS policies. The traceInterceptor
- * handles trace propagation for backend API requests instead.
+ * creates a real CLIENT span per API call and handles propagation instead.
  *
  * Call once in app bootstrap (main.ts).
  */
@@ -28,20 +30,16 @@ export async function initializeTracing(): Promise<void> {
     [ATTR_SERVICE_VERSION]: '0.1.0',
   });
 
-  const consoleExporter = new ConsoleSpanExporter();
-  const spanProcessors = [new SimpleSpanProcessor(consoleExporter)];
+  const spanProcessors = [new SimpleSpanProcessor(new ConsoleSpanExporter())];
 
-  // OTLP exporter — only in production (collector must be running)
-  if (environment.production) {
-    const endpoint =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis as any).env?.['OTEL_EXPORTER_OTLP_ENDPOINT'] ?? 'http://localhost:4318';
-    const { OTLPTraceExporter } = await import('@opentelemetry/exporter-trace-otlp-http');
-    const otlpExporter = new OTLPTraceExporter({
-      url: `${endpoint}/v1/traces`,
-    });
-    spanProcessors.push(new SimpleSpanProcessor(otlpExporter));
-  }
+  const { OTLPTraceExporter } = await import('@opentelemetry/exporter-trace-otlp-http');
+  spanProcessors.push(
+    new SimpleSpanProcessor(
+      new OTLPTraceExporter({
+        url: environment.otelEndpoint,
+      }),
+    ),
+  );
 
   const provider = new WebTracerProvider({
     resource,
