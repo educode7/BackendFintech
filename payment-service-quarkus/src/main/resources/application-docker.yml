@@ -4,6 +4,7 @@ quarkus:
     password: change-me
     jdbc:
       url: jdbc:postgresql://postgres:5432/payments_db
+      telemetry: true
     reactive:
       url: postgresql://postgres:5432/payments_db
 

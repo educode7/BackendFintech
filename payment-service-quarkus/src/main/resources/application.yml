@@ -17,6 +17,7 @@ quarkus:
     password: postgres
     jdbc:
       url: jdbc:postgresql://localhost:5432/payments_db
+      telemetry: true
     reactive:
       url: postgresql://localhost:5432/payments_db
 

@@ -248,6 +248,8 @@ services:
       QUARKUS_DATASOURCE_PASSWORD: change-me
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/payments_db
       QUARKUS_DATASOURCE_REACTIVE_URL: postgresql://postgres:5432/payments_db
+      QUARKUS_DATASOURCE_JDBC_TELEMETRY: "true"
+      QUARKUS_DATASOURCE_JDBC_TELEMETRY_ENABLED: "true"
       QUARKUS_REDIS_HOSTS: redis://redis:6379
       QUARKUS_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       QUARKUS_OIDC_AUTH_SERVER_URL: http://keycloak:8180/realms/wallet
@@ -284,6 +286,8 @@ services:
       QUARKUS_DATASOURCE_PASSWORD: change-me
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/wallet
       QUARKUS_DATASOURCE_REACTIVE_URL: postgresql://postgres:5432/wallet
+      QUARKUS_DATASOURCE_JDBC_TELEMETRY: "true"
+      QUARKUS_DATASOURCE_JDBC_TELEMETRY_ENABLED: "true"
       QUARKUS_REDIS_HOSTS: redis://redis:6379
       QUARKUS_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       QUARKUS_OIDC_AUTH_SERVER_URL: http://keycloak:8180/realms/wallet
@@ -318,6 +322,8 @@ services:
       QUARKUS_DATASOURCE_PASSWORD: change-me
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/notifications_db
       QUARKUS_DATASOURCE_REACTIVE_URL: postgresql://postgres:5432/notifications_db
+      QUARKUS_DATASOURCE_JDBC_TELEMETRY: "true"
+      QUARKUS_DATASOURCE_JDBC_TELEMETRY_ENABLED: "true"
       QUARKUS_REDIS_HOSTS: redis://redis:6379
       QUARKUS_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       QUARKUS_OIDC_AUTH_SERVER_URL: http://keycloak:8180/realms/wallet
