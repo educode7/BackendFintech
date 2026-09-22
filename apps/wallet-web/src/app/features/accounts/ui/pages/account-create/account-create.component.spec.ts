@@ -3,12 +3,19 @@ import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { AccountCreateComponent } from './account-create.component';
 import { AccountStore } from '../../../application/stores/account.store';
+import { AuthService } from '@core/infrastructure/auth.service';
 
 describe('AccountCreateComponent', () => {
   let openAccountSpy: ReturnType<typeof vi.fn>;
+  let authServiceMock: Partial<AuthService>;
 
   beforeEach(async () => {
     openAccountSpy = vi.fn();
+    authServiceMock = {
+      getUserInfo: vi.fn().mockReturnValue({ sub: 'test-user-id', email: 'test@test.com', roles: [], expiresAt: 0 }),
+      getCachedUserInfo: vi.fn().mockReturnValue({ sub: 'test-user-id', email: 'test@test.com', roles: [], expiresAt: 0 }),
+      isAuthenticated: vi.fn().mockReturnValue(true),
+    };
 
     await TestBed.configureTestingModule({
       imports: [AccountCreateComponent],
@@ -22,6 +29,7 @@ describe('AccountCreateComponent', () => {
             openAccount: openAccountSpy,
           },
         },
+        { provide: AuthService, useValue: authServiceMock },
       ],
     }).compileComponents();
   });

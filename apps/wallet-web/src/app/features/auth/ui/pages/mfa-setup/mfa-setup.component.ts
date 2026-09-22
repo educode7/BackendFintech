@@ -14,7 +14,7 @@ import { FormsModule } from '@angular/forms';
       @if (store.setupLoading()) {
         <div class="loading">Setting up MFA...</div>
       } @else if (store.setupError()) {
-        <div class="error" role="alert" aria-live="assertive">{{ store.setupError() }}</div>
+        <div class="error" role="alert" aria-live="polite">{{ store.setupError() }}</div>
         <button class="btn" (click)="initSetup()">Retry</button>
       } @else if (store.setupData() && !store.setupComplete()) {
         <p class="instruction">
@@ -43,13 +43,15 @@ import { FormsModule } from '@angular/forms';
             (input)="store.clearVerifyError()"
           />
           @if (store.verifyError()) {
-            <div id="setup-error-msg" class="field-error" role="alert" aria-live="assertive">{{ store.verifyError() }}</div>
+            <div id="setup-error-msg" class="field-error" role="alert" aria-live="polite">{{ store.verifyError() }}</div>
           }
           <button class="btn btn-primary" (click)="verifySetup()" [disabled]="verifyCode.length !== 6 || store.verifying()">
             {{ store.verifying() ? 'Verifying...' : 'Verify & Activate' }}
           </button>
           @if (verifyCode.length !== 6 && !store.verifying()) {
             <p class="helper-text">Enter all 6 digits to enable verification</p>
+          } @else if (store.verifying()) {
+            <p class="helper-text">Please wait while we verify your code</p>
           }
         </div>
       } @else if (store.setupComplete()) {

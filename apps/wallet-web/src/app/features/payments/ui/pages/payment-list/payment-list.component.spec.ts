@@ -1,10 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { vi } from 'vitest';
 import { PaymentListComponent } from './payment-list.component';
 import { PaymentStore } from '../../../application/stores/payment.store';
+import { AuthService } from '@core/infrastructure/auth.service';
 
 describe('PaymentListComponent', () => {
+  let authServiceMock: Partial<AuthService>;
+
   beforeEach(async () => {
+    authServiceMock = {
+      getUserInfo: vi.fn().mockReturnValue({ sub: 'test-user-id', email: 'test@test.com', roles: [], expiresAt: 0 }),
+      getCachedUserInfo: vi.fn().mockReturnValue({ sub: 'test-user-id', email: 'test@test.com', roles: [], expiresAt: 0 }),
+      isAuthenticated: vi.fn().mockReturnValue(true),
+    };
+
     await TestBed.configureTestingModule({
       imports: [PaymentListComponent],
       providers: [
@@ -18,6 +28,7 @@ describe('PaymentListComponent', () => {
             loadPayments: () => {},
           },
         },
+        { provide: AuthService, useValue: authServiceMock },
       ],
     }).compileComponents();
   });

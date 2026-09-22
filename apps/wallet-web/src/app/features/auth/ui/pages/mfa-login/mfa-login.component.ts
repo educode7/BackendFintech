@@ -35,7 +35,7 @@ const MAX_ATTEMPTS = 5;
             autofocus
           />
           @if (store.verifyError()) {
-            <div id="login-error-msg" class="field-error" role="alert" aria-live="assertive">{{ store.verifyError() }}</div>
+            <div id="login-error-msg" class="field-error" role="alert" aria-live="polite">{{ store.verifyError() }}</div>
           }
           <div class="attempts-info">
             {{ MAX_ATTEMPTS - store.attempts() }} attempts remaining before lockout
@@ -48,7 +48,9 @@ const MAX_ATTEMPTS = 5;
             {{ store.verifying() ? 'Verifying...' : 'Verify' }}
           </button>
           @if (code.length !== 6 && !store.verifying()) {
-            <p class="helper-text">Enter all 6 digits to enable verification</p>
+            <p class="helper-text">Enter all 6 digits to verify</p>
+          } @else if (store.verifying()) {
+            <p class="helper-text">Please wait while we verify your code</p>
           }
         </div>
       }

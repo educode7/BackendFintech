@@ -1,10 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { vi } from 'vitest';
 import { NotificationListComponent } from './notification-list.component';
 import { NotificationStore } from '../../../application/stores/notification.store';
+import { AuthService } from '@core/infrastructure/auth.service';
 
 describe('NotificationListComponent', () => {
+  let authServiceMock: Partial<AuthService>;
+
   beforeEach(async () => {
+    authServiceMock = {
+      getUserInfo: vi.fn().mockReturnValue({ sub: 'test-user-id', email: 'test@test.com', roles: [], expiresAt: 0 }),
+      getCachedUserInfo: vi.fn().mockReturnValue({ sub: 'test-user-id', email: 'test@test.com', roles: [], expiresAt: 0 }),
+      isAuthenticated: vi.fn().mockReturnValue(true),
+    };
+
     await TestBed.configureTestingModule({
       imports: [NotificationListComponent],
       providers: [
@@ -18,6 +28,7 @@ describe('NotificationListComponent', () => {
             loadNotifications: () => {},
           },
         },
+        { provide: AuthService, useValue: authServiceMock },
       ],
     }).compileComponents();
   });

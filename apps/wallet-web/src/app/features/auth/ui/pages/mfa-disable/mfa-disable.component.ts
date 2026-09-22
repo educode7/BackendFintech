@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy } from '@angular/core';
+import { Component, inject, effect, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../application/stores/auth.store';
 import { FormsModule } from '@angular/forms';
@@ -36,13 +36,15 @@ import { FormsModule } from '@angular/forms';
             autofocus
           />
           @if (store.disableError()) {
-            <div id="disable-error-msg" class="field-error" role="alert" aria-live="assertive">{{ store.disableError() }}</div>
+            <div id="disable-error-msg" class="field-error" role="alert" aria-live="polite">{{ store.disableError() }}</div>
           }
           <button class="btn btn-danger" (click)="disableMfa()" [disabled]="code.length !== 6 || store.disableLoading()">
             {{ store.disableLoading() ? 'Disabling...' : 'Disable MFA' }}
           </button>
           @if (code.length !== 6 && !store.disableLoading()) {
             <p class="helper-text">Enter your current TOTP code to confirm</p>
+          } @else if (store.disableLoading()) {
+            <p class="helper-text">Please wait while we disable MFA</p>
           }
           <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
         </div>
@@ -76,24 +78,25 @@ export class MfaDisableComponent implements OnDestroy {
 
   code = '';
   private redirectTimeout: ReturnType<typeof setTimeout> | null = null;
-  private checkInterval: ReturnType<typeof setInterval> | null = null;
+
+  constructor() {
+    // React to disableSuccess signal change instead of polling
+    effect(() => {
+      if (this.store.disableSuccess()) {
+        this.redirectTimeout = setTimeout(() => {
+          this.router.navigate(['/']);
+        }, 3000);
+      }
+    });
+  }
 
   ngOnDestroy(): void {
     if (this.redirectTimeout) clearTimeout(this.redirectTimeout);
-    if (this.checkInterval) clearInterval(this.checkInterval);
   }
 
   disableMfa(): void {
     if (this.code.length !== 6) return;
     this.store.disableMfa(this.code);
-
-    this.checkInterval = setInterval(() => {
-      if (this.store.disableSuccess()) {
-        if (this.checkInterval) clearInterval(this.checkInterval);
-        this.checkInterval = null;
-        this.redirectTimeout = setTimeout(() => this.router.navigate(['/']), 3000);
-      }
-    }, 50);
   }
 
   cancel(): void {
