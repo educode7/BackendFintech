@@ -26,10 +26,15 @@ export class PaymentAdapter extends BaseAdapter {
     ).pipe(catchError(this.handleError));
   }
 
-  list(page = 0, size = 20): Observable<PaymentPageResponse> {
-    const params = new HttpParams()
+  list(page = 0, size = 20, userId?: string): Observable<PaymentPageResponse> {
+    let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
+
+    if (userId) {
+      params = params.set('userId', userId);
+    }
+
     return this.paymentHttp.get<PaymentPageResponse>(
       `${this.baseUrl}/api/v1/payments`,
       { params }

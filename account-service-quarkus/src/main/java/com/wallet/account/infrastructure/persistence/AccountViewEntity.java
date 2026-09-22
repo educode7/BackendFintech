@@ -71,10 +71,10 @@ public class AccountViewEntity {
     private String holderPhone;
 
     // Banking
-    @Column(name = "bank_code", length = 10)
+    @Column(name = "bank_code", length = 20)
     private String bankCode;
 
-    @Column(name = "bank_name", length = 100)
+    @Column(name = "bank_name", length = 150)
     private String bankName;
 
     @Column(name = "account_currency", length = 3)

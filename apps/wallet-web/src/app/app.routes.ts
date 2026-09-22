@@ -57,6 +57,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'new',
+        loadComponent: () =>
+          import('@features/accounts/ui/pages/account-create/account-create.component').then(
+            (m) => m.AccountCreateComponent
+          ),
+      },
+      {
         path: ':accountId',
         loadComponent: () =>
           import('@features/accounts/ui/pages/account-detail/account-detail.component').then(

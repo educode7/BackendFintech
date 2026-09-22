@@ -5,6 +5,7 @@ import { PageHeaderComponent } from '@shared/components/page-header/page-header.
 import { LoadingSpinnerComponent } from '@shared/components/loading-spinner/loading-spinner.component';
 import { ErrorDisplayComponent } from '@shared/components/error-display/error-display.component';
 import { CurrencyPipe } from '@shared/pipes/currency.pipe';
+import { AuthService } from '@core/infrastructure/auth.service';
 
 @Component({
   selector: 'app-account-list',
@@ -94,9 +95,11 @@ import { CurrencyPipe } from '@shared/pipes/currency.pipe';
 export class AccountListComponent implements OnInit {
   private readonly router = inject(Router);
   readonly store = inject(AccountStore);
+  private readonly authService = inject(AuthService);
 
   ngOnInit() {
-    this.store.loadAccounts();
+    const userId = this.authService.getUserInfo()?.sub;
+    this.store.loadAccounts(0, 20, userId);
   }
 
   openCreate() {

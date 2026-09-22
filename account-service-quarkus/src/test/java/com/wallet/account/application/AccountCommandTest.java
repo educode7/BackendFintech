@@ -16,7 +16,7 @@ class AccountCommandTest {
     @DisplayName("OpenAccount should create command")
     void openAccount() {
         Money balance = new Money(new BigDecimal("100.00"), "USD");
-        AccountCommand.OpenAccount cmd = new AccountCommand.OpenAccount("user-001", balance, "req-001");
+        AccountCommand.OpenAccount cmd = new AccountCommand.OpenAccount("user-001", balance, "req-001", null);
 
         assertEquals("user-001", cmd.userId());
         assertEquals(balance, cmd.initialBalance());

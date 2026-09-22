@@ -1,23 +1,19 @@
 package com.wallet.account.infrastructure.grpc;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-
-import jakarta.inject.Inject;
-
 import com.wallet.account.application.AccountCommand;
 import com.wallet.account.application.AccountCommandService;
 import com.wallet.account.application.AccountQueryService;
 import com.wallet.account.application.AccountResponse;
-import com.wallet.shared.event.AccountData;
 import com.wallet.account.domain.exception.AccountNotFoundException;
 import com.wallet.account.domain.exception.ConcurrentModificationException;
 import com.wallet.account.domain.exception.InsufficientFundsException;
-
 import com.wallet.account.proto.*;
-
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
+import jakarta.inject.Inject;
+
+import java.math.BigDecimal;
+import java.time.Instant;
 
 /**
  * Infrastructure adapter: gRPC server for Account Service.

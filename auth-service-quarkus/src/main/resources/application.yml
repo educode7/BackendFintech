@@ -11,7 +11,7 @@ quarkus:
     auth-server-url: http://localhost:8180/realms/wallet
     client-id: wallet-backend
     credentials:
-      secret: "p4PPO2LQkZfJfMOeQ4xYoXs541tpxmzC"
+      secret: "9Jto5rgsmk2JUCbgg1W4hoBJe60soDCU"
     token:
       issuer: http://localhost:8180/realms/wallet
 

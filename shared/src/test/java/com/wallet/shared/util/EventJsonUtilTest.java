@@ -1,5 +1,6 @@
 package com.wallet.shared.util;
 
+import com.wallet.shared.event.AccountData;
 import com.wallet.shared.event.AccountOpenedEvent;
 import com.wallet.shared.event.EventMetadata;
 import com.wallet.shared.event.MoneyDepositedEvent;
@@ -67,7 +68,8 @@ class EventJsonUtilTest {
             AccountOpenedEvent original = new AccountOpenedEvent(
                 "acc-1", "user-1",
                 new Money(new BigDecimal("0.01"), "USD"),
-                METADATA
+                METADATA,
+                null
             );
 
             String json = JsonUtil.toJson(original);

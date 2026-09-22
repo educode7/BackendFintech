@@ -4,6 +4,7 @@ import { PageHeaderComponent } from '@shared/components/page-header/page-header.
 import { LoadingSpinnerComponent } from '@shared/components/loading-spinner/loading-spinner.component';
 import { ErrorDisplayComponent } from '@shared/components/error-display/error-display.component';
 import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
+import { AuthService } from '@core/infrastructure/auth.service';
 
 @Component({
   selector: 'app-notification-list',
@@ -57,8 +58,12 @@ import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
 })
 export class NotificationListComponent implements OnInit {
   readonly store = inject(NotificationStore);
+  private readonly authService = inject(AuthService);
 
   ngOnInit() {
-    this.store.loadNotifications('current-user');
+    const userId = this.authService.getUserInfo()?.sub;
+    if (userId) {
+      this.store.loadNotifications(userId);
+    }
   }
 }

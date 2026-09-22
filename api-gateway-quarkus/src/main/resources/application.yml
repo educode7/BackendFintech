@@ -16,7 +16,7 @@ quarkus:
     enabled: false
     application-type: service
     credentials:
-      secret: "p4PPO2LQkZfJfMOeQ4xYoXs541tpxmzC"
+      secret: "9Jto5rgsmk2JUCbgg1W4hoBJe60soDCU"
 
   smallrye-health:
     enabled: true

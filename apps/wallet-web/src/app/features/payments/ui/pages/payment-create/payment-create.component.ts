@@ -5,6 +5,7 @@ import { PaymentStore } from '../../../application/stores/payment.store';
 import { AccountStore } from '../../../../accounts/application/stores/account.store';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { ErrorDisplayComponent } from '@shared/components/error-display/error-display.component';
+import { AuthService } from '@core/infrastructure/auth.service';
 import type { Account } from '../../../../accounts/domain/account.model';
 
 @Component({
@@ -143,9 +144,10 @@ export class PaymentCreateComponent implements OnInit {
   readonly paymentStore = inject(PaymentStore);
   readonly accountStore = inject(AccountStore);
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   selectedAccountId = '';
-  userId = '';
+  userId = this.authService.getUserInfo()?.sub ?? '';
   amount = '';
   currency = 'USD';
 
@@ -163,7 +165,8 @@ export class PaymentCreateComponent implements OnInit {
   channel = 'WEB';
 
   ngOnInit() {
-    this.accountStore.loadAccounts(0, 100);
+    const userId = this.authService.getUserInfo()?.sub;
+    this.accountStore.loadAccounts(0, 100, userId);
   }
 
   onAccountChange(accountId: string) {

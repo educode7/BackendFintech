@@ -30,6 +30,16 @@ public interface AccountViewRepository {
     long countAll();
 
     /**
+     * Find accounts by user ID with pagination.
+     */
+    List<AccountView> findByUserIdPaginated(String userId, int offset, int limit);
+
+    /**
+     * Count accounts by user ID.
+     */
+    long countByUserId(String userId);
+
+    /**
      * Save or update an account view.
      */
     AccountView save(AccountView view);

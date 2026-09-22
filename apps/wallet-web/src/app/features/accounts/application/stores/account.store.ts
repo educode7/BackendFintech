@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { AccountAdapter } from '../../infrastructure/account.adapter';
-import type { Account } from '../../domain/account.model';
+import type { Account, OpenAccountRequest } from '../../domain/account.model';
 
 /**
  * Account store — manages account state with signals.
@@ -25,10 +25,10 @@ export class AccountStore {
     this.adapter = adapter;
   }
 
-  loadAccounts(page = 0, size = 20): void {
+  loadAccounts(page = 0, size = 20, userId?: string): void {
     this._loading.set(true);
     this._error.set(null);
-    this.adapter.list(page, size).subscribe({
+    this.adapter.list(page, size, userId).subscribe({
       next: (res) => {
         this._accounts.set(res.items);
         this._loading.set(false);
@@ -55,7 +55,7 @@ export class AccountStore {
     });
   }
 
-  openAccount(request: { userId: string; initialBalance: { amount: string; currency: string } }): void {
+  openAccount(request: OpenAccountRequest): void {
     this._loading.set(true);
     this._error.set(null);
     this.adapter.open(request, crypto.randomUUID()).subscribe({

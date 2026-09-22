@@ -34,7 +34,7 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
         PaymentEntity entity = PaymentEntity.fromDomainNew(payment);
         entityManager.persist(entity);
         entityManager.flush();
-        // Copy the Hibernate-generated ID back to the domain
+        // Copy the Hibernate-generated ID back to the domain, preserving ALL extended fields
         return Payment.of(
                 entity.getId().toString(),
                 payment.accountId(),
@@ -44,7 +44,15 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
                 payment.status(),
                 entity.getVersion(),
                 payment.createdAt(),
-                payment.updatedAt()
+                payment.updatedAt(),
+                payment.paymentType(),
+                payment.beneficiaryName(), payment.beneficiaryDocumentType(), payment.beneficiaryDocumentNumber(),
+                payment.beneficiaryAccountNumber(), payment.beneficiaryBankCode(), payment.beneficiaryBankName(),
+                payment.senderName(), payment.senderDocumentType(), payment.senderDocumentNumber(),
+                payment.reference(), payment.externalReference(),
+                payment.channel(), payment.ipAddress(), payment.userAgent(),
+                payment.processedAt(), payment.failedAt(), payment.failureReason(), payment.retryCount(),
+                payment.feeAmount()
         );
     }
 
@@ -89,6 +97,28 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
     public long countAll() {
         return entityManager
                 .createQuery("SELECT COUNT(p) FROM PaymentEntity p", Long.class)
+                .getSingleResult();
+    }
+
+    @Override
+    public List<Payment> findByUserIdPaginated(String userId, int offset, int limit) {
+        return entityManager
+                .createQuery("SELECT p FROM PaymentEntity p WHERE p.userId = :userId ORDER BY p.createdAt DESC",
+                        PaymentEntity.class)
+                .setParameter("userId", userId)
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList()
+                .stream()
+                .map(PaymentEntity::toDomain)
+                .toList();
+    }
+
+    @Override
+    public long countByUserId(String userId) {
+        return entityManager
+                .createQuery("SELECT COUNT(p) FROM PaymentEntity p WHERE p.userId = :userId", Long.class)
+                .setParameter("userId", userId)
                 .getSingleResult();
     }
 }

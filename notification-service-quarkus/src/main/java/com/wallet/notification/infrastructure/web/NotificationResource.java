@@ -51,7 +51,7 @@ public class NotificationResource {
     public PageResponse<NotificationResponse> list(
             @PathParam("userId") String userId,
             @QueryParam("page") @Min(0) int page,
-            @QueryParam("size") @Min(1) @Max(100) int size) {
+            @QueryParam("size") @Min(0) @Max(100) int size) {
 
         if (page < 0) page = 0;
         if (size < 1 || size > 100) size = 20;

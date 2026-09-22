@@ -64,12 +64,13 @@ public class AccountResource {
     @Operation(summary = "List all accounts with pagination")
     public Uni<PageResponse<AccountResponse>> list(
             @QueryParam("page") @Min(0) int page,
-            @QueryParam("size") @Min(1) @Max(100) int size) {
+            @QueryParam("size") @Min(1) @Max(100) int size,
+            @QueryParam("userId") String userId) {
 
         if (page < 0) page = 0;
         if (size < 1 || size > 100) size = 20;
 
-        return queryService.findAll(page, size);
+        return queryService.findAll(page, size, userId);
     }
 
     @POST

@@ -38,12 +38,21 @@ public class GetPaymentUseCase {
 
     /**
      * List all payments with pagination.
+     * If userId is provided, filters by user; otherwise returns all payments.
      */
-    public Uni<PageResponse<PaymentResponse>> findAll(int page, int size) {
+    public Uni<PageResponse<PaymentResponse>> findAll(int page, int size, String userId) {
         return Uni.createFrom().item(() -> {
             int offset = page * size;
-            List<Payment> payments = paymentRepository.findAll(offset, size);
-            long total = paymentRepository.countAll();
+            List<Payment> payments;
+            long total;
+
+            if (userId != null && !userId.isBlank()) {
+                payments = paymentRepository.findByUserIdPaginated(userId, offset, size);
+                total = paymentRepository.countByUserId(userId);
+            } else {
+                payments = paymentRepository.findAll(offset, size);
+                total = paymentRepository.countAll();
+            }
 
             List<PaymentResponse> items = payments.stream()
                     .map(PaymentResponse::from)

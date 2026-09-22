@@ -45,12 +45,21 @@ public class AccountQueryService {
 
     /**
      * List all accounts with pagination.
+     * If userId is provided, filters by user; otherwise returns all accounts.
      */
-    public Uni<PageResponse<AccountResponse>> findAll(int page, int size) {
+    public Uni<PageResponse<AccountResponse>> findAll(int page, int size, String userId) {
         return Uni.createFrom().item(() -> {
             int offset = page * size;
-            List<AccountView> accounts = viewRepository.findAll(offset, size);
-            long total = viewRepository.countAll();
+            List<AccountView> accounts;
+            long total;
+
+            if (userId != null && !userId.isBlank()) {
+                accounts = viewRepository.findByUserIdPaginated(userId, offset, size);
+                total = viewRepository.countByUserId(userId);
+            } else {
+                accounts = viewRepository.findAll(offset, size);
+                total = viewRepository.countAll();
+            }
 
             List<AccountResponse> items = accounts.stream()
                     .map(AccountResponse::from)

@@ -159,12 +159,13 @@ public class PaymentResource {
     @Operation(summary = "List all payments with pagination")
     public Uni<PageResponse<PaymentResponse>> list(
             @QueryParam("page") int page,
-            @QueryParam("size") int size) {
+            @QueryParam("size") int size,
+            @QueryParam("userId") String userId) {
 
         if (page < 0) page = 0;
         if (size < 1 || size > 100) size = 20;
 
-        return getPaymentUseCase.findAll(page, size);
+        return getPaymentUseCase.findAll(page, size, userId);
     }
 
     @GET

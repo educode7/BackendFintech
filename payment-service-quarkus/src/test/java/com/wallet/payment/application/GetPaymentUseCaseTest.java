@@ -76,7 +76,7 @@ class GetPaymentUseCaseTest {
         when(paymentRepository.findAll(0, 10)).thenReturn(List.of(payment1, payment2));
         when(paymentRepository.countAll()).thenReturn(2L);
 
-        UniAssertSubscriber<PageResponse<PaymentResponse>> subscriber = useCase.findAll(0, 10)
+        UniAssertSubscriber<PageResponse<PaymentResponse>> subscriber = useCase.findAll(0, 10, null)
                 .subscribe().withSubscriber(UniAssertSubscriber.create());
 
         PageResponse<PaymentResponse> response = subscriber.assertCompleted().getItem();
@@ -92,7 +92,7 @@ class GetPaymentUseCaseTest {
         when(paymentRepository.findAll(0, 10)).thenReturn(List.of());
         when(paymentRepository.countAll()).thenReturn(0L);
 
-        UniAssertSubscriber<PageResponse<PaymentResponse>> subscriber = useCase.findAll(0, 10)
+        UniAssertSubscriber<PageResponse<PaymentResponse>> subscriber = useCase.findAll(0, 10, null)
                 .subscribe().withSubscriber(UniAssertSubscriber.create());
 
         PageResponse<PaymentResponse> response = subscriber.assertCompleted().getItem();

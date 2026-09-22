@@ -12,10 +12,14 @@ import type { Account, AccountPageResponse, OpenAccountRequest, DepositRequest, 
 export class AccountAdapter extends BaseAdapter {
   private readonly accountHttp = inject(HttpClient);
 
-  list(page = 0, size = 20): Observable<AccountPageResponse> {
-    const params = new HttpParams()
+  list(page = 0, size = 20, userId?: string): Observable<AccountPageResponse> {
+    let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
+
+    if (userId) {
+      params = params.set('userId', userId);
+    }
 
     return this.accountHttp.get<AccountPageResponse>(
       `${this.baseUrl}/api/v1/accounts`,

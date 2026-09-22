@@ -65,6 +65,28 @@ public class AccountViewRepositoryAdapter implements AccountViewRepository {
     }
 
     @Override
+    public List<AccountView> findByUserIdPaginated(String userId, int offset, int limit) {
+        return entityManager
+                .createQuery("SELECT a FROM AccountViewEntity a WHERE a.userId = :userId ORDER BY a.lastUpdated DESC",
+                        AccountViewEntity.class)
+                .setParameter("userId", userId)
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList()
+                .stream()
+                .map(AccountViewEntity::toDomain)
+                .toList();
+    }
+
+    @Override
+    public long countByUserId(String userId) {
+        return entityManager
+                .createQuery("SELECT COUNT(a) FROM AccountViewEntity a WHERE a.userId = :userId", Long.class)
+                .setParameter("userId", userId)
+                .getSingleResult();
+    }
+
+    @Override
     @Transactional
     public AccountView save(AccountView view) {
         AccountViewEntity entity = AccountViewEntity.fromDomain(view);

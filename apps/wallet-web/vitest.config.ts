@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vitest/config';
+import path from 'path';
 
 /**
  * Angular 22 is zoneless. The generated init-testbed.js contains:
@@ -26,6 +27,14 @@ function stripZoneJsImport(): Plugin {
 
 export default defineConfig({
   plugins: [stripZoneJsImport()],
+  resolve: {
+    alias: {
+      '@core': path.resolve(__dirname, './src/app/core'),
+      '@features': path.resolve(__dirname, './src/app/features'),
+      '@shared': path.resolve(__dirname, './src/app/shared'),
+      '@env': path.resolve(__dirname, './src/environments'),
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

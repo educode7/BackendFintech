@@ -77,7 +77,7 @@ public class PaymentEntity {
     @Column(name = "beneficiary_account_number", length = 20)
     private String beneficiaryAccountNumber;
 
-    @Column(name = "beneficiary_bank_code", length = 10)
+    @Column(name = "beneficiary_bank_code", length = 20)
     private String beneficiaryBankCode;
 
     @Column(name = "beneficiary_bank_name", length = 100)

@@ -227,12 +227,14 @@ export class DashboardComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    this.accountStore.loadAccounts(0, 10);
-    this.paymentStore.loadPayments(0, 10);
-
     const userInfo = this.authService.getUserInfo();
-    if (userInfo?.sub) {
-      this.notificationStore.loadNotifications(userInfo.sub, 0, 10);
+    const userId = userInfo?.sub;
+
+    this.accountStore.loadAccounts(0, 10, userId);
+    this.paymentStore.loadPayments(0, 10, userId);
+
+    if (userId) {
+      this.notificationStore.loadNotifications(userId, 0, 10);
     }
   }
 }

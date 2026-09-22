@@ -26,10 +26,10 @@ export class PaymentStore {
     this.adapter = adapter;
   }
 
-  loadPayments(page = 0, size = 20): void {
+  loadPayments(page = 0, size = 20, userId?: string): void {
     this._loading.set(true);
     this._error.set(null);
-    this.adapter.list(page, size).subscribe({
+    this.adapter.list(page, size, userId).subscribe({
       next: (res) => {
         this._payments.set(res.items);
         this._total.set(res.total);

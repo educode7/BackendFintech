@@ -17,7 +17,14 @@ class AccountViewEntityTest {
     @DisplayName("should map domain to entity")
     void domainToEntity() {
         AccountView view = new AccountView("acc-001", "user-001",
-                new BigDecimal("100.00"), "USD", "OPEN", 1, Instant.now());
+                new BigDecimal("100.00"), "USD", "OPEN", 1, Instant.now(),
+                null, null, null, null, null,
+                null, null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null);
         AccountViewEntity entity = AccountViewEntity.fromDomain(view);
 
         assertEquals("acc-001", entity.getAccountId());
@@ -32,7 +39,14 @@ class AccountViewEntityTest {
     @DisplayName("should map entity to domain and back")
     void entityToDomain() {
         AccountView view = new AccountView("acc-001", "user-001",
-                new BigDecimal("100.00"), "USD", "OPEN", 1, Instant.now());
+                new BigDecimal("100.00"), "USD", "OPEN", 1, Instant.now(),
+                null, null, null, null, null,
+                null, null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null);
         AccountViewEntity entity = AccountViewEntity.fromDomain(view);
 
         AccountView roundTrip = entity.toDomain();

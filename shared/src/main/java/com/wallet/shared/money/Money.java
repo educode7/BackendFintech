@@ -18,8 +18,8 @@ public record Money(BigDecimal amount, String currency) {
     public Money {
         Objects.requireNonNull(amount, "amount");
         Objects.requireNonNull(currency, "currency");
-        if (amount.signum() <= 0) {
-            throw new IllegalArgumentException("amount must be > 0");
+        if (amount.signum() < 0) {
+            throw new IllegalArgumentException("amount must be >= 0");
         }
         if (!isIso4217(currency)) {
             throw new IllegalArgumentException("currency must be ISO-4217 (3 uppercase letters): " + currency);

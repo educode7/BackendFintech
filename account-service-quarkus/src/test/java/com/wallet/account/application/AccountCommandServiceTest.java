@@ -48,7 +48,7 @@ class AccountCommandServiceTest {
                 .thenAnswer(inv -> inv.getArgument(0));
 
         AccountCommand.OpenAccount command = new AccountCommand.OpenAccount(
-                "user-001", new Money(new BigDecimal("100.00"), "USD"), "req-001");
+                "user-001", new Money(new BigDecimal("100.00"), "USD"), "req-001", null);
 
         UniAssertSubscriber<AccountResponse> subscriber = commandService.openAccount(command)
                 .subscribe().withSubscriber(UniAssertSubscriber.create());
@@ -70,7 +70,8 @@ class AccountCommandServiceTest {
         // Setup: account exists in event store
         AccountOpenedEvent opened = new AccountOpenedEvent("acc-001", "user-001",
                 new Money(new BigDecimal("100.00"), "USD"),
-                EventMetadata.create(null, 1));
+                EventMetadata.create(null, 1),
+                null);
         when(eventStore.loadEvents("acc-001")).thenReturn(List.of(opened));
         when(viewRepository.save(any(AccountView.class)))
                 .thenAnswer(inv -> inv.getArgument(0));

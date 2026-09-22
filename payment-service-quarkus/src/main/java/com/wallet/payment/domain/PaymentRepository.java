@@ -36,4 +36,14 @@ public interface PaymentRepository {
      * Count all payments.
      */
     long countAll();
+
+    /**
+     * Find payments by user ID with pagination.
+     */
+    List<Payment> findByUserIdPaginated(String userId, int offset, int limit);
+
+    /**
+     * Count payments by user ID.
+     */
+    long countByUserId(String userId);
 }

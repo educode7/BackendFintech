@@ -39,7 +39,14 @@ class AccountQueryServiceTest {
     @DisplayName("should return account when found")
     void shouldReturnAccount() {
         AccountView view = AccountView.of("acc-001", "user-001",
-                new BigDecimal("100.00"), "USD", "OPEN", 1, Instant.now());
+                new BigDecimal("100.00"), "USD", "OPEN", 1, Instant.now(),
+                null, null, null, null, null,
+                null, null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null);
         when(viewRepository.findById("acc-001")).thenReturn(Optional.of(view));
 
         UniAssertSubscriber<AccountResponse> subscriber = queryService.findById("acc-001")
@@ -65,14 +72,28 @@ class AccountQueryServiceTest {
     @DisplayName("should return paginated accounts")
     void shouldReturnPaginatedAccounts() {
         AccountView view1 = AccountView.of("acc-001", "user-001",
-                new BigDecimal("100.00"), "USD", "OPEN", 1, Instant.now());
+                new BigDecimal("100.00"), "USD", "OPEN", 1, Instant.now(),
+                null, null, null, null, null,
+                null, null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null);
         AccountView view2 = AccountView.of("acc-002", "user-002",
-                new BigDecimal("200.00"), "USD", "OPEN", 1, Instant.now());
+                new BigDecimal("200.00"), "USD", "OPEN", 1, Instant.now(),
+                null, null, null, null, null,
+                null, null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null, null, null,
+                null, null);
 
         when(viewRepository.findAll(0, 10)).thenReturn(List.of(view1, view2));
         when(viewRepository.countAll()).thenReturn(2L);
 
-        UniAssertSubscriber<PageResponse<AccountResponse>> subscriber = queryService.findAll(0, 10)
+        UniAssertSubscriber<PageResponse<AccountResponse>> subscriber = queryService.findAll(0, 10, null)
                 .subscribe().withSubscriber(UniAssertSubscriber.create());
 
         PageResponse<AccountResponse> response = subscriber.assertCompleted().getItem();
@@ -88,7 +109,7 @@ class AccountQueryServiceTest {
         when(viewRepository.findAll(0, 10)).thenReturn(List.of());
         when(viewRepository.countAll()).thenReturn(0L);
 
-        UniAssertSubscriber<PageResponse<AccountResponse>> subscriber = queryService.findAll(0, 10)
+        UniAssertSubscriber<PageResponse<AccountResponse>> subscriber = queryService.findAll(0, 10, null)
                 .subscribe().withSubscriber(UniAssertSubscriber.create());
 
         PageResponse<AccountResponse> response = subscriber.assertCompleted().getItem();

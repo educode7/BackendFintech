@@ -2,6 +2,8 @@ package com.wallet.notification.infrastructure.kafka;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -14,12 +16,9 @@ import org.jboss.logging.Logger;
 import com.wallet.notification.application.NotificationService;
 import com.wallet.shared.event.PaymentCompletedEvent;
 import com.wallet.shared.money.Money;
-import com.wallet.shared.util.JsonUtil;
 
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
-import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.redis.client.RedisAPI;
 import io.vertx.mutiny.redis.client.Response;
@@ -50,9 +49,8 @@ public class PaymentEventConsumer {
     }
 
     @Incoming("payment-events-in")
-    @Blocking
     @WithSpan("consume-payment-event")
-    public Uni<Void> onPaymentCompleted(@SpanAttribute("event.id") Message<String> message) {
+    public CompletionStage<Void> onPaymentCompleted(@SpanAttribute("event.id") Message<String> message) {
         try {
             JsonObject json = new JsonObject(message.getPayload());
             String eventId = json.getString("eventId");
@@ -61,7 +59,7 @@ public class PaymentEventConsumer {
             // 1. INBOX CHECK
             if (isAlreadyProcessed(eventId)) {
                 log.debugf("Event already processed (inbox): eventId=%s — discarding", eventId);
-                return Uni.createFrom().voidItem();
+                return CompletableFuture.completedFuture(null);
             }
 
             // 2. Deserialize event
@@ -75,22 +73,18 @@ public class PaymentEventConsumer {
                     payload.getString("status"),
                     new com.wallet.shared.event.EventMetadata(eventId, java.time.Instant.now(), null, 1));
 
-            // 3. Process notification (runs on worker thread via @Blocking)
+            // 3. Process notification
             log.infof("Processing PaymentCompletedEvent: paymentId=%s, userId=%s", event.paymentId(), event.userId());
             notificationService.handlePaymentCompleted(event);
 
             // 4. Mark inbox
             markAsProcessed(eventId);
-
-            return Uni.createFrom().voidItem();
         } catch (PersistenceException e) {
-            // Duplicate from consumer replays — already persisted, treat as success
             log.infof("Duplicate notification ignored (already persisted): %s", e.getMessage());
-            return Uni.createFrom().voidItem();
         } catch (Exception e) {
             log.errorf("Failed to process payment event: %s", e.getMessage(), e);
-            return Uni.createFrom().failure(e);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     private boolean isAlreadyProcessed(String eventId) {

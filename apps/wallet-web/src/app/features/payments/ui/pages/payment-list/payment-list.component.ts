@@ -6,6 +6,7 @@ import { LoadingSpinnerComponent } from '@shared/components/loading-spinner/load
 import { ErrorDisplayComponent } from '@shared/components/error-display/error-display.component';
 import { CurrencyPipe } from '@shared/pipes/currency.pipe';
 import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
+import { AuthService } from '@core/infrastructure/auth.service';
 
 @Component({
   selector: 'app-payment-list',
@@ -78,9 +79,11 @@ import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
 export class PaymentListComponent implements OnInit {
   private readonly router = inject(Router);
   readonly store = inject(PaymentStore);
+  private readonly authService = inject(AuthService);
 
   ngOnInit() {
-    this.store.loadPayments();
+    const userId = this.authService.getUserInfo()?.sub;
+    this.store.loadPayments(0, 20, userId);
   }
 
   openCreate() {
