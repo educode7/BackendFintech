@@ -44,14 +44,18 @@
       ]
     },
     {
-      "title": "Circuit breaker state",
-      "type": "stat",
+      "title": "Payments processed vs notifications dispatched (rate/min)",
+      "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "targets": [
         {
-          "expr": "resilience4j_circuitbreaker_state",
-          "legendFormat": "{{name}}"
+          "expr": "sum(rate(payment_processed_total[1m]))",
+          "legendFormat": "payments"
+        },
+        {
+          "expr": "sum(rate(notification_processed_total[1m]))",
+          "legendFormat": "notifications"
         }
       ]
     },
@@ -68,20 +72,22 @@
       ]
     },
     {
-      "title": "Events published vs consumed (rate/min)",
-      "type": "timeseries",
+      "title": "Slowest SQL queries (mean exec time)",
+      "type": "table",
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
       "targets": [
         {
-          "expr": "sum(rate(spring_kafka_template_send_total[1m]))",
-          "legendFormat": "published"
-        },
-        {
-          "expr": "sum(rate(spring_kafka_listener_records_consumed_total[1m]))",
-          "legendFormat": "consumed"
+          "expr": "topk(10, pg_stat_statements_mean_exec_time)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{query}}"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms" },
+        "overrides": []
+      }
     }
   ],
   "refresh": "10s",
