@@ -39,6 +39,7 @@ quarkus:
   log:
     console:
       enable: true
+      format: "%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [traceId=%X{traceId}] [%c] (%t) %s%e%n"
     level: INFO
     category:
       "com.wallet.auth": INFO

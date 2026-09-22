@@ -102,7 +102,7 @@ quarkus:
   log:
     console:
       enable: true
-      format: "%d{yyyy-MM-dd HH:mm:ss} [%p] [%t{...}] %s%e%n"
+      format: "%d{yyyy-MM-dd HH:mm:ss} [%p] [traceId=%X{traceId}] [%t{...}] %s%e%n"
     level: INFO
     category:
       "com.wallet.payment": INFO
