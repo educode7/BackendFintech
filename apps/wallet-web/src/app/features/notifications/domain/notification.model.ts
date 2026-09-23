@@ -10,6 +10,7 @@ export interface Notification {
   status: 'PENDING' | 'SENT' | 'FAILED';
   createdAt: string;
   sentAt?: string;
+  readAt?: string | null;
 }
 
 export interface NotificationPageResponse {

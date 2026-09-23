@@ -21,4 +21,18 @@ export class NotificationAdapter extends BaseAdapter {
       { params }
     ).pipe(catchError(this.handleError));
   }
+
+  markRead(id: string): Observable<Notification> {
+    return this.notificationHttp.patch<Notification>(
+      `${this.baseUrl}/api/v1/notifications/${id}/read`,
+      {}
+    ).pipe(catchError(this.handleError));
+  }
+
+  markAllRead(userId: string): Observable<{ marked: number }> {
+    return this.notificationHttp.patch<{ marked: number }>(
+      `${this.baseUrl}/api/v1/notifications/${userId}/read-all`,
+      {}
+    ).pipe(catchError(this.handleError));
+  }
 }

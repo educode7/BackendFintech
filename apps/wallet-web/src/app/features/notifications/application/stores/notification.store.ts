@@ -20,7 +20,7 @@ export class NotificationStore {
   readonly total = this._total.asReadonly();
   readonly hasNotifications = computed(() => this._notifications().length > 0);
   readonly unreadCount = computed(() =>
-    this._notifications().filter((n) => n.status === 'PENDING').length
+    this._notifications().filter((n) => !n.readAt).length
   );
 
   constructor(adapter: NotificationAdapter) {
@@ -39,6 +39,43 @@ export class NotificationStore {
       error: (err) => {
         this._error.set(err.detail || 'Failed to load notifications');
         this._loading.set(false);
+      },
+    });
+  }
+
+  markAsRead(id: string): void {
+    const current = this._notifications().find((n) => n.id === id);
+    if (!current || current.readAt) {
+      // Unknown id or already read — idempotent no-op.
+      return;
+    }
+    this.adapter.markRead(id).subscribe({
+      next: (updated) => {
+        this._notifications.update((list) =>
+          list.map((n) =>
+            n.id === id ? { ...n, readAt: updated.readAt ?? new Date().toISOString() } : n
+          )
+        );
+      },
+      error: (err) => {
+        this._error.set(err?.detail || 'Failed to mark notification as read');
+      },
+    });
+  }
+
+  markAllAsRead(userId: string): void {
+    if (this.unreadCount() === 0) {
+      return;
+    }
+    this.adapter.markAllRead(userId).subscribe({
+      next: () => {
+        const now = new Date().toISOString();
+        this._notifications.update((list) =>
+          list.map((n) => (n.readAt ? n : { ...n, readAt: now }))
+        );
+      },
+      error: (err) => {
+        this._error.set(err?.detail || 'Failed to mark notifications as read');
       },
     });
   }
