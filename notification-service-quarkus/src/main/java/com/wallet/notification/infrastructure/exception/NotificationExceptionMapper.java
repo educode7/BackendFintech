@@ -20,6 +20,8 @@ public class NotificationExceptionMapper implements ExceptionMapper<RuntimeExcep
         return switch (exception) {
             case IllegalArgumentException e -> buildResponse(Response.Status.BAD_REQUEST,
                     "BAD_REQUEST", "Bad Request", e.getMessage());
+            case jakarta.ws.rs.NotFoundException e -> buildResponse(Response.Status.NOT_FOUND,
+                    "NOT_FOUND", "Not Found", e.getMessage());
             default -> buildResponse(Response.Status.INTERNAL_SERVER_ERROR,
                     "INTERNAL_ERROR", "Internal Server Error", "An unexpected error occurred");
         };

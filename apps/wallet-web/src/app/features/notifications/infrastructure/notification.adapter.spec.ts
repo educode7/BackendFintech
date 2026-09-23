@@ -62,4 +62,45 @@ describe('NotificationAdapter', () => {
       req.flush(mockResponse);
     });
   });
+
+  describe('markRead', () => {
+    it('should PATCH /api/v1/notifications/:id/read', () => {
+      const mockResponse = {
+        id: 'n-1',
+        userId: 'user-1',
+        type: 'EMAIL',
+        subject: 'Payment completed',
+        body: 'Your payment was processed',
+        status: 'SENT',
+        createdAt: new Date().toISOString(),
+        sentAt: new Date().toISOString(),
+        readAt: new Date().toISOString(),
+      };
+
+      adapter.markRead('n-1').subscribe((response) => {
+        expect(response.id).toBe('n-1');
+        expect(response.readAt).toBeTruthy();
+      });
+
+      const req = httpMock.expectOne(
+        (r) => r.url === `${environment.apiGateway}/api/v1/notifications/n-1/read`
+      );
+      expect(req.request.method).toBe('PATCH');
+      req.flush(mockResponse);
+    });
+  });
+
+  describe('markAllRead', () => {
+    it('should PATCH /api/v1/notifications/:userId/read-all returning marked count', () => {
+      adapter.markAllRead('user-1').subscribe((response) => {
+        expect(response.marked).toBe(2);
+      });
+
+      const req = httpMock.expectOne(
+        (r) => r.url === `${environment.apiGateway}/api/v1/notifications/user-1/read-all`
+      );
+      expect(req.request.method).toBe('PATCH');
+      req.flush({ marked: 2 });
+    });
+  });
 });

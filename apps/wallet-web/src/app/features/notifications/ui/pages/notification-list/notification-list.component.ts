@@ -18,9 +18,14 @@ import { AuthService } from '@core/infrastructure/auth.service';
     } @else if (store.error()) {
       <app-error-display [detail]="store.error()!" />
     } @else {
+      @if (store.unreadCount() > 0) {
+        <div class="list-toolbar">
+          <button type="button" class="mark-all-btn" (click)="markAllAsRead()">Mark all as read</button>
+        </div>
+      }
       <div class="notification-list">
         @for (n of store.notifications(); track n.id) {
-          <div class="notification-card" [class.unread]="n.status === 'PENDING'">
+          <div class="notification-card" [class.unread]="!n.readAt" (click)="store.markAsRead(n.id)">
             <div class="notification-header">
               <span class="type-badge" [class]="n.type.toLowerCase()">{{ n.type }}</span>
               <span class="time">{{ n.createdAt | relativeTime }}</span>
@@ -36,10 +41,16 @@ import { AuthService } from '@core/infrastructure/auth.service';
     }
   `,
   styles: [`
+    .list-toolbar { display: flex; justify-content: flex-end; margin-bottom: 0.5rem; }
+    .mark-all-btn {
+      font-size: 0.85rem; padding: 0.35rem 0.75rem; border: 1px solid #3b82f6;
+      background: white; color: #3b82f6; border-radius: 0.375rem; cursor: pointer;
+    }
+    .mark-all-btn:hover { background: #eff6ff; }
     .notification-list { display: flex; flex-direction: column; gap: 0.75rem; }
     .notification-card {
       background: white; border: 1px solid #e5e7eb; border-radius: 0.5rem;
-      padding: 1rem; transition: border-color 0.2s;
+      padding: 1rem; transition: border-color 0.2s; cursor: pointer;
     }
     .notification-card.unread { border-left: 3px solid #3b82f6; }
     .notification-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
@@ -64,6 +75,13 @@ export class NotificationListComponent implements OnInit {
     const userId = this.authService.getUserInfo()?.sub;
     if (userId) {
       this.store.loadNotifications(userId);
+    }
+  }
+
+  markAllAsRead(): void {
+    const userId = this.authService.getUserInfo()?.sub;
+    if (userId) {
+      this.store.markAllAsRead(userId);
     }
   }
 }

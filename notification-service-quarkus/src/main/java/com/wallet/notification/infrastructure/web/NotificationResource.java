@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -67,15 +69,39 @@ public class NotificationResource {
         return PageResponse.of(items, total, page, size);
     }
 
+    @PATCH
+    @Path("/{id}/read")
+    @Operation(summary = "Mark a single notification as read (idempotent)")
+    public NotificationResponse markRead(@PathParam("id") String id) {
+        return repository.markAsRead(id)
+                .map(NotificationResponse::from)
+                .orElseThrow(() -> new NotFoundException("notification not found: " + id));
+    }
+
+    @PATCH
+    @Path("/{userId}/read-all")
+    @Operation(summary = "Mark all unread notifications for a user as read")
+    public MarkAllReadResponse markAllRead(@PathParam("userId") String userId) {
+        return new MarkAllReadResponse(repository.markAllAsRead(userId));
+    }
+
     /**
      * Notification response DTO — hides internal details.
      */
     public record NotificationResponse(
             String id, String userId, String type, String subject, String body,
-            String status, java.time.Instant createdAt, java.time.Instant sentAt) {
+            String status, java.time.Instant createdAt, java.time.Instant sentAt,
+            java.time.Instant readAt) {
         public static NotificationResponse from(Notification n) {
             return new NotificationResponse(n.id(), n.userId(), n.type().name(),
-                    n.subject(), n.body(), n.status().name(), n.createdAt(), n.sentAt());
+                    n.subject(), n.body(), n.status().name(), n.createdAt(), n.sentAt(),
+                    n.readAt());
         }
+    }
+
+    /**
+     * Response DTO for read-all: count of previously unread notifications updated.
+     */
+    public record MarkAllReadResponse(long marked) {
     }
 }

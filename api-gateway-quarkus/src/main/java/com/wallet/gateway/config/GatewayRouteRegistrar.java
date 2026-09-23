@@ -126,23 +126,15 @@ public class GatewayRouteRegistrar {
         if (vertxBuf != null && vertxBuf.length() > 0) {
             log.infof("Body available via ctx.body(), length=%d", vertxBuf.length());
             sendProxyRequest(ctx, uri, targetUrl, vertxBuf.getBytes());
-        } else {
-            // For methods with no body (GET, DELETE, HEAD, OPTIONS), send immediately.
-            // Vert.x bodyHandler NEVER fires for GET requests — there is no body to read,
-            // so waiting for it causes an infinite hang.
-            String method = ctx.request().method().name();
-            if ("GET".equals(method) || "DELETE".equals(method)
-                    || "HEAD".equals(method) || "OPTIONS".equals(method)) {
-                log.infof("No-body method %s, sending directly", method);
-                sendProxyRequest(ctx, uri, targetUrl, new byte[0]);
-            } else {
-                log.warnf("Body is null or empty for %s, falling back to bodyHandler", method);
-                ctx.request().bodyHandler(body -> {
-                    log.infof("Body via bodyHandler fallback, length=%d", body.length());
-                    sendProxyRequest(ctx, uri, targetUrl, body.getBytes());
-                });
-            }
+            return;
         }
+
+        // BodyHandler at order -1 already ran. A null/empty buffer means there is
+        // no request body (GET, PATCH /read, DELETE, …). Do NOT re-register
+        // request.bodyHandler here — the stream is already consumed and Vert.x
+        // throws IllegalStateException("Request has already been read") → HTTP 500.
+        log.infof("No request body for %s, sending with empty body", ctx.request().method().name());
+        sendProxyRequest(ctx, uri, targetUrl, new byte[0]);
     }
 
     private void sendProxyRequest(io.vertx.ext.web.RoutingContext ctx, String uri,

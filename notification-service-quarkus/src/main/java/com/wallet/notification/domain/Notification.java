@@ -18,9 +18,11 @@ public final class Notification {
     private final String processedEventId;
     private final java.time.Instant createdAt;
     private final java.time.Instant sentAt;
+    private final java.time.Instant readAt;
 
     private Notification(String id, String userId, Type type, String subject, String body,
-                         Status status, String processedEventId, java.time.Instant createdAt, java.time.Instant sentAt) {
+                         Status status, String processedEventId, java.time.Instant createdAt,
+                         java.time.Instant sentAt, java.time.Instant readAt) {
         this.id = id;
         this.userId = userId;
         this.type = type;
@@ -30,22 +32,46 @@ public final class Notification {
         this.processedEventId = processedEventId;
         this.createdAt = createdAt;
         this.sentAt = sentAt;
+        this.readAt = readAt;
     }
 
     public static Notification create(String id, String userId, Type type, String subject,
                                       String body, String processedEventId) {
         return new Notification(id, userId, type, subject, body, Status.PENDING,
-                processedEventId, java.time.Instant.now(), null);
+                processedEventId, java.time.Instant.now(), null, null);
+    }
+
+    /**
+     * Factory: reconstitute from persistence preserving all persisted timestamps.
+     */
+    public static Notification of(String id, String userId, Type type, String subject, String body,
+                                  Status status, String processedEventId,
+                                  java.time.Instant createdAt, java.time.Instant sentAt,
+                                  java.time.Instant readAt) {
+        return new Notification(id, userId, type, subject, body, status,
+                processedEventId, createdAt, sentAt, readAt);
     }
 
     public Notification markSent() {
         return new Notification(id, userId, type, subject, body, Status.SENT,
-                processedEventId, createdAt, java.time.Instant.now());
+                processedEventId, createdAt, java.time.Instant.now(), readAt);
     }
 
     public Notification markFailed() {
         return new Notification(id, userId, type, subject, body, Status.FAILED,
-                processedEventId, createdAt, null);
+                processedEventId, createdAt, null, readAt);
+    }
+
+    /**
+     * Mark this notification as read by the user. Idempotent: if already read,
+     * returns this instance unchanged.
+     */
+    public Notification markAsRead() {
+        if (readAt != null) {
+            return this;
+        }
+        return new Notification(id, userId, type, subject, body, status,
+                processedEventId, createdAt, sentAt, java.time.Instant.now());
     }
 
     public String id() { return id; }
@@ -57,4 +83,5 @@ public final class Notification {
     public String processedEventId() { return processedEventId; }
     public java.time.Instant createdAt() { return createdAt; }
     public java.time.Instant sentAt() { return sentAt; }
+    public java.time.Instant readAt() { return readAt; }
 }
