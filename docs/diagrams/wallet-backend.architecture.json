@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Wallet Backend — Arquitectura",
+    "output": "wallet-backend-architecture.html",
+    "quality_profile": "showcase",
+    "viewBox": [960, 560],
+    "views": [
+      {
+        "id": "request-path",
+        "label": "Ruta de request",
+        "focus": ["client", "gateway", "payment", "account", "notification"],
+        "note": "Del cliente por el gateway hasta los servicios de negocio."
+      },
+      {
+        "id": "identity",
+        "label": "Identidad",
+        "focus": ["gateway", "auth", "keycloak"],
+        "note": "JWT, refresh tokens y MFA vía auth-service + Keycloak."
+      },
+      {
+        "id": "data-plane",
+        "label": "Plano de datos",
+        "focus": ["payment", "account", "notification", "postgres", "redis", "kafka"],
+        "note": "Postgres por servicio, CQRS en Redis y eventos en Kafka."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "keycloak",
+      "type": "security",
+      "label": "Keycloak",
+      "sublabel": ":8180 · OIDC",
+      "pos": [40, 60],
+      "size": [130, 64]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "auth-service",
+      "sublabel": ":8084 · Quarkus",
+      "pos": [230, 60],
+      "size": [150, 64]
+    },
+    {
+      "id": "payment",
+      "type": "backend",
+      "label": "payment-service",
+      "sublabel": ":8081",
+      "pos": [470, 60],
+      "size": [150, 64]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "Postgres 16",
+      "sublabel": "BD por servicio",
+      "pos": [740, 60],
+      "size": [150, 64]
+    },
+    {
+      "id": "client",
+      "type": "external",
+      "label": "Client / cURL",
+      "sublabel": "wallet-web · HTTP",
+      "pos": [40, 260],
+      "size": [140, 64]
+    },
+    {
+      "id": "gateway",
+      "type": "backend",
+      "label": "api-gateway",
+      "sublabel": ":8080",
+      "tag": "CORS · correlation",
+      "pos": [240, 260],
+      "size": [150, 72]
+    },
+    {
+      "id": "account",
+      "type": "backend",
+      "label": "account-service",
+      "sublabel": ":8082 · CQRS",
+      "pos": [470, 260],
+      "size": [150, 64]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis 7",
+      "sublabel": "idempotencia · CQRS",
+      "pos": [740, 260],
+      "size": [150, 64]
+    },
+    {
+      "id": "notification",
+      "type": "backend",
+      "label": "notification-service",
+      "sublabel": ":8083 · readAt",
+      "pos": [470, 440],
+      "size": [160, 64]
+    },
+    {
+      "id": "kafka",
+      "type": "messagebus",
+      "label": "Kafka",
+      "sublabel": "payment.events",
+      "pos": [740, 440],
+      "size": [150, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Identity",
+      "wraps": ["keycloak", "auth"]
+    },
+    {
+      "kind": "region",
+      "label": "Edge",
+      "wraps": ["client", "gateway"]
+    },
+    {
+      "kind": "region",
+      "label": "Business services",
+      "wraps": ["payment", "account", "notification"]
+    },
+    {
+      "kind": "region",
+      "label": "Data plane",
+      "wraps": ["postgres", "redis", "kafka"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "client-gateway",
+      "from": "client",
+      "to": "gateway",
+      "label": "HTTPS REST",
+      "variant": "emphasis"
+    },
+    {
+      "id": "gateway-payment",
+      "from": "gateway",
+      "to": "payment",
+      "label": "payments",
+      "fromSide": "top",
+      "toSide": "left",
+      "labelAt": [430, 200]
+    },
+    {
+      "id": "gateway-account",
+      "from": "gateway",
+      "to": "account",
+      "label": "accounts"
+    },
+    {
+      "id": "gateway-notification",
+      "from": "gateway",
+      "to": "notification",
+      "label": "notifications · PATCH read",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "labelAt": [360, 400]
+    },
+    {
+      "id": "gateway-auth",
+      "from": "gateway",
+      "to": "auth",
+      "label": "JWT",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelAt": [315, 200]
+    },
+    {
+      "id": "auth-keycloak",
+      "from": "auth",
+      "to": "keycloak",
+      "label": "OIDC · MFA",
+      "variant": "security"
+    },
+    {
+      "id": "payment-pg",
+      "from": "payment",
+      "to": "postgres",
+      "label": "SQL + Flyway",
+      "labelAt": [665, 76]
+    },
+    {
+      "id": "payment-kafka",
+      "from": "payment",
+      "to": "kafka",
+      "label": "publish events",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "right",
+      "via": [[545, 50], [910, 50], [910, 472]],
+      "labelAt": [730, 36]
+    },
+    {
+      "id": "account-redis",
+      "from": "account",
+      "to": "redis",
+      "label": "read model"
+    },
+    {
+      "id": "kafka-notification",
+      "from": "kafka",
+      "to": "notification",
+      "label": "consume",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Edge",
+      "items": [
+        "Client → api-gateway (:8080) · CORS + correlation ID",
+        "Routes: /api/v1/{payments,accounts,notifications,auth}"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Servicios",
+      "items": [
+        "payment · account (CQRS) · notification (readAt)",
+        "auth-service + Keycloak: JWT, refresh, MFA"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Datos",
+      "items": [
+        "Postgres 16: BD por servicio · Flyway V2 read_at",
+        "Redis: idempotencia/CQRS · Kafka: payment.events"
+      ]
+    }
+  ]
+}
