@@ -58,6 +58,8 @@ Each commit < 400 → eligible as stacked PR slices to main in C1→C2 order.
 - [x] Runtime 500 diagnosis: notification-service image was stale (pre-feature) → rebuilt; V2 migration applied; direct service PATCH verified 200/404
 - [x] CorsFilter: added PATCH to Access-Control-Allow-Methods
 - [x] Gateway fix: empty-body methods (incl. PATCH /read) no longer re-register bodyHandler after BodyHandler already consumed the stream
+- [x] C3 `13ce9a3` — fix(gateway): proxy empty-body PATCH and allow PATCH in service CORS
+- [x] E2E via gateway:8080 — PATCH read 200 (idempotent), missing 404, read-all 200; backend tests 13/13 green
 
 ## Verification evidence
 - Backend compile: `mvn -q -DskipTests compile` (notification-service-quarkus): exit 0 (parent re-ran: COMPILE_OK).
@@ -74,5 +76,4 @@ Each commit < 400 → eligible as stacked PR slices to main in C1→C2 order.
 - Out of scope (unchanged): notifications-page auto-read on open, per-type read filters.
 
 ## Next step
-- Commit C3 runtime fixes (gateway empty-body proxy + service CorsFilter PATCH), rebuild/restart gateway, re-verify end-to-end `localhost:8080`.
-- Push branch / open stacked PRs C1→C2 (+ C3) — user decision under ordinary repository policy.
+- Push branch / open stacked PRs C1→C2→C3 — user decision under ordinary repository policy.
