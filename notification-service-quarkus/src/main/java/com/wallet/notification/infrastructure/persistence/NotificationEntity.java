@@ -42,6 +42,9 @@ public class NotificationEntity {
     @Column(name = "sent_at")
     private Instant sentAt;
 
+    @Column(name = "read_at")
+    private Instant readAt;
+
     public NotificationEntity() {}
 
     public static NotificationEntity fromDomain(com.wallet.notification.domain.Notification n) {
@@ -55,19 +58,16 @@ public class NotificationEntity {
         e.processedEventId = n.processedEventId();
         e.createdAt = n.createdAt();
         e.sentAt = n.sentAt();
+        e.readAt = n.readAt();
         return e;
     }
 
     public com.wallet.notification.domain.Notification toDomain() {
-        com.wallet.notification.domain.Notification n = com.wallet.notification.domain.Notification.create(
+        return com.wallet.notification.domain.Notification.of(
                 id, userId, com.wallet.notification.domain.Notification.Type.valueOf(type),
-                subject, body, processedEventId);
-        if (com.wallet.notification.domain.Notification.Status.valueOf(status) == com.wallet.notification.domain.Notification.Status.SENT) {
-            return n.markSent();
-        } else if (com.wallet.notification.domain.Notification.Status.valueOf(status) == com.wallet.notification.domain.Notification.Status.FAILED) {
-            return n.markFailed();
-        }
-        return n;
+                subject, body,
+                com.wallet.notification.domain.Notification.Status.valueOf(status),
+                processedEventId, createdAt, sentAt, readAt);
     }
 
     // Getters
@@ -80,10 +80,12 @@ public class NotificationEntity {
     public String getProcessedEventId() { return processedEventId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getSentAt() { return sentAt; }
+    public Instant getReadAt() { return readAt; }
 
     // Setters for updates
     public void setStatus(String status) { this.status = status; }
     public void setSubject(String subject) { this.subject = subject; }
     public void setBody(String body) { this.body = body; }
     public void setSentAt(Instant sentAt) { this.sentAt = sentAt; }
+    public void setReadAt(Instant readAt) { this.readAt = readAt; }
 }

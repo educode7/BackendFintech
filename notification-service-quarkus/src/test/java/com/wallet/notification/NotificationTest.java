@@ -54,4 +54,47 @@ class NotificationTest {
         LoggingNotificationSender sender = new LoggingNotificationSender();
         assertInstanceOf(NotificationSender.class, sender);
     }
+
+    @Test
+    @DisplayName("markAsRead should set readAt and preserve timestamps")
+    void markAsReadSetsReadAt() {
+        Notification n = Notification.create("n-1", "user-1", Notification.Type.EMAIL,
+                "Test", "Body", "evt-1");
+        Notification read = n.markAsRead();
+
+        assertNull(n.readAt());
+        assertNotNull(read.readAt());
+        assertEquals(n.createdAt(), read.createdAt());
+        assertEquals(Notification.Status.PENDING, read.status());
+        assertEquals("Test", read.subject());
+    }
+
+    @Test
+    @DisplayName("markAsRead should be idempotent")
+    void markAsReadIdempotent() {
+        Notification n = Notification.create("n-1", "user-1", Notification.Type.EMAIL,
+                "Test", "Body", "evt-1");
+        Notification first = n.markAsRead();
+        Notification second = first.markAsRead();
+
+        assertSame(first, second);
+        assertEquals(first.readAt(), second.readAt());
+    }
+
+    @Test
+    @DisplayName("of should preserve createdAt/sentAt/readAt from persistence")
+    void ofPreservesTimestamps() {
+        java.time.Instant createdAt = java.time.Instant.parse("2026-01-01T00:00:00Z");
+        java.time.Instant sentAt = java.time.Instant.parse("2026-01-01T00:00:01Z");
+        java.time.Instant readAt = java.time.Instant.parse("2026-01-01T00:00:02Z");
+
+        Notification n = Notification.of("n-1", "user-1", Notification.Type.EMAIL,
+                "Subject", "Body", Notification.Status.SENT, "evt-1",
+                createdAt, sentAt, readAt);
+
+        assertEquals(createdAt, n.createdAt());
+        assertEquals(sentAt, n.sentAt());
+        assertEquals(readAt, n.readAt());
+        assertEquals(Notification.Status.SENT, n.status());
+    }
 }
