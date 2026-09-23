@@ -55,6 +55,9 @@ Each commit < 400 → eligible as stacked PR slices to main in C1→C2 order.
 - [x] Parent gatekeeper: structural readback + spot-check
 - [x] C1 `052a4c5` — backend read/unread + PATCH endpoints
 - [x] C2 (this commit) — frontend unread semantics + mark actions + this doc; final hash recorded in Engram mirror `odd/notifications-read-status/tasks`
+- [x] Runtime 500 diagnosis: notification-service image was stale (pre-feature) → rebuilt; V2 migration applied; direct service PATCH verified 200/404
+- [x] CorsFilter: added PATCH to Access-Control-Allow-Methods
+- [x] Gateway fix: empty-body methods (incl. PATCH /read) no longer re-register bodyHandler after BodyHandler already consumed the stream
 
 ## Verification evidence
 - Backend compile: `mvn -q -DskipTests compile` (notification-service-quarkus): exit 0 (parent re-ran: COMPILE_OK).
@@ -62,6 +65,7 @@ Each commit < 400 → eligible as stacked PR slices to main in C1→C2 order.
 - Frontend tests: `npx ng test --watch=false` (apps/wallet-web): **33 files / 240 tests passed** (parent re-ran: green).
 - Writer reported same suites green; parent spot-check confirmed.
 - Note: no `mvnw` wrapper in repo — system Maven 3.9.16 used (`C:\Users\educode\apache-maven-3.9.16\bin\mvn.cmd`).
+- Runtime (notification-service:8083): Flyway v2 applied; `PATCH /{id}/read` → 200 with `readAt`; missing id → 404; `PATCH /{userId}/read-all` → 200 `{"marked":N}`.
 
 ## Known environmental / follow-up notes
 - Migration V2 adds partial index `idx_notifications_user_unread` on `(user_id) WHERE read_at IS NULL`.
@@ -70,4 +74,5 @@ Each commit < 400 → eligible as stacked PR slices to main in C1→C2 order.
 - Out of scope (unchanged): notifications-page auto-read on open, per-type read filters.
 
 ## Next step
-- Push branch / open stacked PRs C1→C2 — user decision under ordinary repository policy.
+- Commit C3 runtime fixes (gateway empty-body proxy + service CorsFilter PATCH), rebuild/restart gateway, re-verify end-to-end `localhost:8080`.
+- Push branch / open stacked PRs C1→C2 (+ C3) — user decision under ordinary repository policy.

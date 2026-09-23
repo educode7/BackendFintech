@@ -24,7 +24,7 @@ public class CorsFilter implements ContainerRequestFilter {
         if ("OPTIONS".equalsIgnoreCase(requestContext.getMethod())) {
             requestContext.abortWith(Response.ok()
                     .header("Access-Control-Allow-Origin", resolveOrigin(origin))
-                    .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+                    .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
                     .header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Correlation-Id")
                     .header("Access-Control-Max-Age", "3600")
                     .build());
