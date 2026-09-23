@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Marcar notificación como leída",
+    "output": "mark-notification-read.html",
+    "quality_profile": "showcase",
+    "animation": "trace",
+    "column_fit": "spread",
+    "viewBox": [1040, 640]
+  },
+  "participants": [
+    { "id": "ui", "type": "frontend", "label": "wallet-web", "sublabel": "store" },
+    { "id": "gw", "type": "backend", "label": "api-gateway", "sublabel": "proxy PATCH" },
+    { "id": "ns", "type": "backend", "label": "notification-service", "sublabel": "markAsRead" },
+    { "id": "pg", "type": "database", "label": "Postgres", "sublabel": "notifications_db" }
+  ],
+  "segments": [
+    { "from": 155, "to": 295, "label": "Interacción UI" },
+    { "from": 305, "to": 455, "label": "Proxy gateway" },
+    { "from": 465, "to": 555, "label": "Persistencia" }
+  ],
+  "messages": [
+    {
+      "id": "patch-read",
+      "from": "ui",
+      "to": "gw",
+      "y": 170,
+      "label": "PATCH /api/v1/notifications/{id}/read",
+      "variant": "emphasis",
+      "note": "Store solo emite PATCH si unread = !readAt"
+    },
+    {
+      "id": "empty-body-ok",
+      "from": "gw",
+      "to": "ns",
+      "y": 210,
+      "label": "bodyHandler already ran → empty body OK (C3 fix)",
+      "variant": "default",
+      "note": "No re-register bodyHandler on empty-body PATCH"
+    },
+    {
+      "id": "proxy-patch",
+      "from": "gw",
+      "to": "ns",
+      "y": 270,
+      "label": "proxy PATCH",
+      "variant": "default"
+    },
+    {
+      "id": "set-read-at",
+      "from": "ns",
+      "to": "pg",
+      "y": 340,
+      "label": "UPDATE read_at = now() WHERE read_at IS NULL",
+      "variant": "emphasis",
+      "note": "Idempotente · migración V2"
+    },
+    {
+      "id": "row-ok",
+      "from": "pg",
+      "to": "ns",
+      "y": 390,
+      "label": "row updated (or already read)",
+      "variant": "return"
+    },
+    {
+      "id": "response-200",
+      "from": "ns",
+      "to": "gw",
+      "y": 450,
+      "label": "200 Notification { readAt }",
+      "variant": "return"
+    },
+    {
+      "id": "forward-200",
+      "from": "gw",
+      "to": "ui",
+      "y": 510,
+      "label": "200 · readAt set",
+      "variant": "return",
+      "note": "Idempotente en la segunda llamada · unreadCount recalculado en UI"
+    }
+  ],
+  "activations": [
+    { "participant": "ui", "from": 165, "to": 520, "type": "frontend" },
+    { "participant": "gw", "from": 165, "to": 520, "type": "backend" },
+    { "participant": "ns", "from": 265, "to": 460, "type": "backend" },
+    { "participant": "pg", "from": 335, "to": 400, "type": "database" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Happy path",
+      "items": [
+        "wallet-web → gateway → notification-service → Postgres",
+        "Respuesta 200 con readAt para pintar la card como leída"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Idempotencia",
+      "items": [
+        "UPDATE solo filas con read_at IS NULL",
+        "Segunda llamada devuelve 200 sin cambiar el timestamp"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Gateway (C3)",
+      "items": [
+        "PATCH sin body no re-registra bodyHandler",
+        "Evita IllegalStateException: Request has already been read"
+      ]
+    }
+  ]
+}

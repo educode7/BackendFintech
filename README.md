@@ -1,45 +1,28 @@
 # Wallet Backend
 
-Backend de billetera digital estilo fintech, multi-módulo Spring Boot 4.1 + Kafka
-con microservicio de autenticación Quarkus + Keycloak.
+Backend de billetera digital estilo fintech, multi-módulo **Quarkus 3.33** + Kafka
+con auth-service + Keycloak.
 Maneja dinero, así que el código aplica rigor de servicio crítico: idempotencia,
 timeouts explícitos, circuit breakers, correlación end-to-end, errores RFC 9457,
 migraciones versionadas, autenticación JWT con refresh tokens y MFA, y
-observabilidad RED.
+observabilidad RED (Prometheus + Grafana + Tempo).
+
+## Diagramas
+
+| Diagrama | HTML interactivo | Preview |
+|----------|------------------|---------|
+| Arquitectura del sistema | [wallet-backend-architecture.html](docs/diagrams/wallet-backend-architecture.html) | ![Arquitectura](docs/diagrams/wallet-backend-architecture.visual-check.1440x900.light.png) |
+| Secuencia: marcar notificación leída | [mark-notification-read.html](docs/diagrams/mark-notification-read.html) | ![Secuencia read](docs/diagrams/mark-notification-read.visual-check.1440x900.light.png) |
+
+Los HTML son standalone (tema claro/oscuro, zoom, guided views, export PNG/SVG).
+Las specs viven en `docs/diagrams/*.json` (Archify showcase, 9/9 checks).
 
 ```
-┌─────────────┐   ┌──────────────┐   ┌─────────────────────┐
-│  Client /   │ → │ api-gateway  │ → │ payment-service     │  Kafka  ┐
-│  cURL       │   │  (8080)      │   │ (8081)              │ ──────► │
-└─────────────┘   │  Resilience4j│   │ payment.events      │        │
-                  │  Rate limit  │   └─────────────────────┘        │
-                  │  Correlation │   ┌─────────────────────┐        │
-                  └──────┬───────┘ → │ account-service     │ ◄──────┤
-                         │           │ (8082)              │        │
-                         │           │ event-sourced CQRS  │        │
-                         │           │ account.events      │ ──────►│
-                         │           └─────────────────────┘        │
-                         │           ┌─────────────────────┐        │
-                         └─────────► │ notification-service│ ◄──────┘
-                                     │ (8083)              │
-                                     │ notifications db    │
-                                     └─────────────────────┘
-
-        ┌─────────────┐
-        │ auth-service│ ← Quarkus + Keycloak (8084)
-        │ JWT/MFA/    │   Refresh tokens, TOTP MFA
-        │ Revocation  │
-        └──────┬──────┘
-               │
-        ┌──────▼──────┐
-        │  Keycloak   │ ← OIDC provider (8180)
-        │  25.0       │
-        └─────────────┘
-
-        ┌───────────┐    ┌────────┐    ┌──────────┐    ┌────────────┐
-        │ Postgres  │    │ Redis  │    │  Kafka   │    │ Prometheus │
-        │  16       │    │  7     │    │  3.7     │    │ Grafana    │
-        └───────────┘    └────────┘    └──────────┘    └────────────┘
+Client → api-gateway(:8080) → payment(:8081) / account(:8082) / notification(:8083)
+                ↓                      ↓              ↓                 ↓
+         auth-service(:8084)      payments_db   accounts_db     notifications_db
+                ↓                      └──── Kafka payment.events ──┘
+            Keycloak(:8180)              Redis 7 (idempotency / CQRS)
 ```
 
 ## Stack tecnológico
@@ -47,17 +30,14 @@ observabilidad RED.
 | Componente | Versión | Rol |
 |------------|---------|-----|
 | Java       | 25      | ScopedValues, Stream Gatherers, pattern matching, virtual threads |
-| Spring Boot| 4.1.0   | Framework base (web, data, security-ready, actuator) |
-| Spring Cloud| 2025.1.2 | Gateway, LoadBalancer |
-| Quarkus    | 3.17    | Auth service (MFA, tokens, Keycloak integration) |
+| Quarkus    | 3.33.3.2 | Framework base de los 5 servicios (gateway, payment, account, notification, auth) |
 | Keycloak   | 25.0    | OIDC provider, JWT, MFA TOTP, refresh tokens |
-| Kafka      | 3.7 (KRaft) | Bus de eventos entre servicios |
-| Postgres   | 16      | Persistencia (un cluster, una BD por servicio) |
+| Kafka      | KRaft   | Bus de eventos entre servicios (`payment.events`, `account.events`) |
+| Postgres   | 16      | Persistencia (un cluster, una BD por servicio) + Flyway |
 | Redis      | 7       | Idempotencia, rate-limit, CQRS read model |
-| Resilience4j| 2.4.0  | Circuit breakers, retries |
-| Flyway     | 10.x    | Migraciones versionadas |
-| Micrometer + Prometheus | 1.14.x | Métricas RED |
-| Lombok     | 1.18.34 | Reducción de boilerplate |
+| Micrometer + Prometheus | via Quarkus BOM | Métricas RED |
+| Grafana + Tempo + Loki | latest | Dashboards, traces (reemplaza Jaeger), logs |
+| Lombok     | 1.18.42 | Reducción de boilerplate |
 | Maven      | 3.9     | Build multi-módulo |
 | Angular    | 22      | Frontend wallet-web (zoneless) |
 | Vitest     | 5.0     | Testing frontend |
@@ -110,13 +90,10 @@ ambos en una sola tabla fuerza a elegir entre consistencia e índice.
 Redis puede evictar en frío — por eso persistimos también en Postgres como
 fuente de reconstrucción.
 
-### 4. Circuit Breaker (gateway + payment)
-Resilience4j con instancias nombradas. El gateway lo aplica por ruta; payment
-lo aplica al producer de Kafka.
-
-**Por qué en el gateway Y en payment**: el gateway protege al cliente del
-tiempo total de la cadena; payment protege la integridad transaccional cuando
-Kafka está degradado.
+### 4. Rate limiting + timeout en el gateway
+El gateway aplica rate limit por IP (100 req/min, burst 200) y enruta a los
+servicios downstream. Cada adaptador aplica su propio timeout/retry de forma
+explícita (sin reintentos en operaciones no idempotentes).
 
 ### 5. Correlation ID end-to-end
 Cada request lleva `X-Correlation-Id`. Si el cliente no lo envía, el gateway
@@ -132,15 +109,30 @@ Cada respuesta de error es `application/problem+json` con campos estables:
 `timestamp`. Los clientes pueden ramificar en `code` sin parsear mensajes.
 
 ### 7. Observabilidad
-Cada servicio expone `/actuator/prometheus` con métricas RED (Rate, Errors,
-Duration) por endpoint. Health checks personalizados para Kafka, Redis y
-Postgres. Logs estructurados con patrón que incluye `correlationId`.
-Auth service usa OpenTelemetry con exporter OTLP → Jaeger.
+Cada servicio expone métricas Prometheus vía Micrometer (Quarkus
+`quarkus-micrometer-registry-prometheus`) con métricas RED por endpoint.
+Health checks personalizados para Kafka, Redis y Postgres.
+Logs estructurados con patrón que incluye `correlationId`.
+OpenTelemetry OTLP → **Grafana Tempo** (Jaeger fue reemplazado); logs → Loki.
 
 ### 8. Resiliencia
 Timeouts explícitos (Hikari connection-timeout=5s, Kafka delivery=30s).
 Retry SOLO en operaciones idempotentes. Fallback en circuit breakers abiertos
 (`/fallback/{service}` en el gateway).
+
+### 9. Notificaciones con semántica leído/no leído
+`notifications.read_at TIMESTAMPTZ` (migración Flyway **V2**) define
+**unread = `read_at IS NULL`** — no el estado de entrega `PENDING/SENT`.
+Endpoints idempotentes:
+
+- `PATCH /api/v1/notifications/{id}/read` → `200` con `readAt` (404 si no existe)
+- `PATCH /api/v1/notifications/{userId}/read-all` → `200 {"marked":N}`
+
+El frontend (`unreadCount`) cuenta `!readAt`; click en la card o
+*Mark all as read* disparan los PATCH vía el gateway (body vacío — el
+gateway no re-registra `bodyHandler` en ese path).
+
+Ver: [diagrama de secuencia](docs/diagrams/mark-notification-read.html).
 
 ## Estructura del proyecto
 
@@ -151,23 +143,27 @@ BackendFintech/
 ├── Makefile
 ├── README.md
 ├── prometheus.yml
-├── init-postgres/                           scripts primer arranque
-├── monitoring/grafana/
-│   ├── provisioning/{datasources,dashboards}/
-│   └── dashboards/wallet-overview.json
-├── shared/                                  módulo común
+├── otel-collector-config.yml                OTLP → Tempo / Prometheus
+├── init-postgres/                           crea las 3 BDs al primer arranque
+├── config-repo/                             Spring Cloud Config source (montado file:///config-repo)
+├── contracts/                               OpenAPI 3.1 + protobuf (source of truth)
+├── docs/diagrams/                           Archify specs + HTML + visual-check
+├── monitoring/
+│   ├── grafana/{provisioning,dashboards}/
+│   └── tempo/tempo.yml
+├── scripts/                                 JVM diagnostics (jvm-diagnose, JVM-TUNING-REFERENCE)
+├── shared/                                  módulo común (sin Spring/Quarkus)
 │   └── src/main/java/com/wallet/shared/
 │       ├── api/{ErrorResponse,PageResponse}.java
-│       ├── event/{AccountEvent,AccountOpenedEvent,MoneyDepositedEvent,
-│       │           MoneyWithdrawnEvent,PaymentCompletedEvent,EventMetadata}.java
+│       ├── event/{AccountEvent,...,EventMetadata}.java
 │       ├── filter/{CorrelationIdFilter,RequestLoggingFilter}.java
 │       ├── money/{Money,MoneySerializer}.java
 │       ├── util/{IdGenerator,JsonUtil}.java
 │       └── kafka/KafkaTopics.java
-├── api-gateway/                             Spring Cloud Gateway
-├── payment-service/                         Spring MVC + JPA
-├── account-service/                         Spring MVC + JPA + Event Sourcing
-├── notification-service/                    Spring MVC + JPA + Kafka consumer
+├── api-gateway-quarkus/                     Quarkus reverse proxy + CORS + rate limit
+├── payment-service-quarkus/                 Quarkus + JPA (payments_db)
+├── account-service-quarkus/                 Quarkus + Event Sourcing + CQRS
+├── notification-service-quarkus/            Quarkus + Kafka consumer + read_at
 ├── auth-service-quarkus/                    Quarkus + Keycloak (MFA, tokens)
 │   └── src/main/java/com/wallet/auth/
 │       ├── application/
@@ -176,16 +172,12 @@ BackendFintech/
 │       │                 MfaSetupService,MfaVerificationService,MfaDisableService}.java
 │       ├── domain/
 │       │   ├── {RefreshToken,TokenPair,MfaSetup,MfaVerification}.java
-│       │   └── exception/{InvalidRefreshTokenException,TokenRevokedException,
-│       │                   MfaAlreadyEnabledException,MfaNotEnabledException,
-│       │                   InvalidMfaCodeException}.java
+│       │   └── exception/{...}.java
 │       ├── infrastructure/keycloak/
 │       │   └── {KeycloakTokenAdapter,KeycloakMfaAdapter}.java
 │       └── interfaces/rest/
 │           ├── {AuthResource,MfaResource}.java
-│           └── dto/{RefreshRequest,RefreshResponse,RevokeRequest,
-│                    MfaSetupResponse,MfaVerifyRequest,MfaVerifyResponse,
-│                    MfaDisableRequest}.java
+│           └── dto/{...}.java
 └── apps/wallet-web/                         Angular 22 frontend (zoneless)
     └── src/app/
         ├── core/
@@ -201,9 +193,14 @@ BackendFintech/
             ├── accounts/
             │   ├── application/stores/account.store.ts    ← idempotencia
             │   └── infrastructure/account.adapter.ts      ← genera Idempotency-Key
-            └── payments/
-                ├── application/stores/payment.store.ts
-                └── infrastructure/payment.adapter.ts      ← genera Idempotency-Key
+            ├── payments/
+            │   ├── application/stores/payment.store.ts
+            │   └── infrastructure/payment.adapter.ts      ← genera Idempotency-Key
+            └── notifications/                             ← read/unread (readAt)
+                ├── domain/notification.model.ts
+                ├── application/stores/notification.store.ts   ← unreadCount = !readAt
+                ├── infrastructure/notification.adapter.ts      ← PATCH read / read-all
+                └── ui/pages/notification-list/
 ```
 
 ## Cómo arrancarlo
@@ -217,9 +214,9 @@ BackendFintech/
 
 ### 1) Compilar todo
 ```bash
-# Backend
+# Backend (sin wrapper mvnw — usa Maven del sistema)
 export JAVA_HOME=/path/to/jdk-25
-mvn -s ~/.m2/settings.local.xml -pl shared,api-gateway,payment-service,account-service,notification-service,auth-service-quarkus -am clean package -DskipTests
+mvn -s ~/.m2/settings.local.xml clean package -DskipTests
 
 # Frontend
 cd apps/wallet-web && pnpm install && cd ../..
@@ -233,16 +230,15 @@ docker compose up -d --build
 ```
 
 Esto levanta Postgres, Redis, Kafka (KRaft, sin Zookeeper), Keycloak,
-Jaeger, Prometheus, Grafana y los 4 microservicios Spring Boot + auth-service.
+Tempo, Loki, Prometheus, Grafana y los 5 microservicios Quarkus.
 La primera vez tarda ~5-8 minutos (descarga imágenes, compila módulos).
 
 ### 3) Verificar
-- API Gateway: http://localhost:8080/actuator/health
+- API Gateway: http://localhost:8080/q/health
 - Auth Service: http://localhost:8084/q/health
 - Keycloak: http://localhost:8180 (admin / admin)
-- Jaeger: http://localhost:16686
 - Prometheus: http://localhost:9090
-- Grafana: http://localhost:3000 (admin / change-me)
+- Grafana: http://localhost:3000 (admin / change-me) — traces en Explore → Tempo
 
 ## Cómo probarlo
 
@@ -318,6 +314,23 @@ curl -X POST http://localhost:8080/api/v1/payments \
 curl http://localhost:8080/api/v1/notifications/user-1?page=0&size=20
 ```
 
+### Marcar una notificación como leída (idempotente)
+```bash
+curl -X PATCH http://localhost:8080/api/v1/notifications/<NOTIFICATION_ID>/read
+# → 200 {"id":"...","readAt":"2026-09-22T..."}  (segunda llamada: 200, mismo readAt)
+# → 404 si el id no existe
+```
+
+### Marcar todas como leídas
+```bash
+curl -X PATCH http://localhost:8080/api/v1/notifications/user-1/read-all
+# → 200 {"marked":3}
+```
+
+**Semántica**: *unread* = `read_at IS NULL` (no el estado de entrega
+`PENDING/SENT`). El índice parcial `idx_notifications_user_unread` acelera
+el listado de no leídas.
+
 ## Tópicos Kafka
 
 | Topic              | Productor           | Consumidores                              | Headers                                     |
@@ -340,9 +353,12 @@ curl http://localhost:8080/api/v1/notifications/user-1?page=0&size=20
 - `account_view(account_id, user_id, balance_amount, balance_currency, status, version, last_updated)` — backup del read model
 
 ### `notifications_db` (notification-service)
-- `notifications(id, user_id, type, subject, body, status, processed_event_id UNIQUE, created_at, sent_at)`
+- `notifications(id, user_id, type, subject, body, status, processed_event_id UNIQUE, created_at, sent_at, read_at TIMESTAMPTZ)`
+- Índice parcial: `idx_notifications_user_unread ON (user_id) WHERE read_at IS NULL`
+- Migraciones Flyway en `notification-service-quarkus/src/main/resources/db/migration/` (`V1` esquema base, `V2` agrega `read_at`)
 
-Las tres BDs se crean automáticamente al primer arranque vía `init-postgres/`.
+Las tres BDs se crean automáticamente al primer arranque vía `init-postgres/`;
+el schema de cada servicio lo aplica **Flyway** al arrancar el contenedor.
 
 ### Keycloak (auth-service)
 - Realm `wallet` importado vía `keycloak/import/wallet-realm.json`
@@ -389,20 +405,21 @@ Todos los errores son `application/problem+json`. Códigos estables:
   simplificada. En producción: payment-service debería enviar el
   `accountId` explícito en el evento, o el consumer debería auto-crear
   cuenta para el `userId` la primera vez.
-- **Tests backend**: 158 tests unitarios pasando (shared 54, api-gateway 1,
-  payment 30, account 48, notification 25). Falta Testcontainers para tests
-  de integración contra Postgres/Redis/Kafka reales.
-- **Tests frontend**: 121 tests pasando (26 archivos) con Vitest. Patrón
-  `Injector.create()` + `runInInjectionContext()` para adapters, `new Store(mock)`
-  para stores — sin TestBed.
+- **Tests backend**: suite multi-módulo con Surefire/Failsafe (unitarios +
+  `*IT` integration tests con Testcontainers). Ejecutar con
+  `mvn verify`. Fallback/notification service: 13 tests verificados en la
+  feature de read/unread; frontend 240 tests.
+- **Tests frontend**: suite Vitest con patrón `Injector.create()` +
+  `runInInjectionContext()` para adapters, `new Store(mock)` para stores —
+  sin TestBed.
 
 ## Próximos pasos para producción
 
 1. ~~**Spring Security + JWT**~~ ✅ Implementado vía auth-service + Keycloak.
 2. **Outbox transaccional** con Debezium o equivalente.
 3. **Snapshots de agregado** cada N eventos.
-4. **Tracing distribuido** (OpenTelemetry) — auth-service ya exporta a Jaeger;
-   extender a los demás servicios Spring Boot.
+4. **Tracing distribuido**: auth-service y el resto de servicios ya exportan
+   OTLP → collector → **Grafana Tempo** (Jaeger retirado).
 5. **Schema Registry** para los payloads Kafka.
 6. **Rate limit por usuario** (no solo IP) — usar `userId` del JWT.
 7. **Tests de carga** (Gatling / k6).
@@ -429,20 +446,25 @@ make kafka-topics  # listar tópicos de Kafka
 - Java 25: se usan `record`, `sealed interface AccountEvent`, pattern
   matching exhaustivo en `Account.apply()`, y `ScopedValue` para correlación
   end-to-end (con try-catch porque `ScopedValue.orElse(null)` es ilegal en JDK 25).
-- Spring Boot 4.1: test annotations relocados (`@WebMvcTest` →
-  `spring-boot-webmvc.test.autoconfigure`, `@DataJpaTest` →
-  `spring-boot.data.jpa.test.autoconfigure`). Auto-config de Jackson 3 por
-  defecto; se excluye `spring-boot-jackson` y se provee `ObjectMapper` Jackson 2
-  vía `JacksonConfig` para compatibilidad con serialización de eventos existente.
+- **Quarkus 3.33** en los 5 servicios (BOM `io.quarkus.platform:quarkus-bom`):
+  JAX-RS + RESTEasy Reactive, Smallrye Health (`/q/health`), Micrometer →
+  Prometheus, OTLP → collector. Sin Spring MVC/actuator.
 - UUID v7 vía `com.fasterxml.uuid:java-uuid-generator`. Se prefiere v7 sobre
   v4 por orden temporal (mejor para primary keys y orden de eventos).
 - `Money` siempre `BigDecimal`. Nunca `float`/`double`.
 - Lombok: se usan `@Getter`, `@Setter`, `@ToString`, `@RequiredArgsConstructor`,
   nunca `@Data` (explícito > mágico).
-- Auth service (Quarkus 3.17): Clean Architecture con puertos y adaptadores.
+- Auth service: Clean Architecture con puertos y adaptadores.
   `KeycloakTokenAdapter` y `KeycloakMfaAdapter` implementan los puertos de
   salida contra la API Admin de Keycloak. Refresh tokens con family tracking
   para detectar reuse.
+- Gateway: `GatewayRouteRegistrar` hace proxy de body; para requests sin body
+  (GET, PATCH `/read`, DELETE) **no** re-registra `bodyHandler` — evita
+  `IllegalStateException: Request has already been read` tras el BodyHandler
+  de orden -1.
+- notification-service: `CorsFilter` incluye `PATCH` en
+  `Access-Control-Allow-Methods`; migración **V2** agrega `read_at` + índice
+  parcial de no leídas.
 
 ### Frontend (wallet-web)
 - Angular 22 con `provideZonelessChangeDetection()` (zoneless).
