@@ -89,15 +89,16 @@ caso de uso "Claude Code for SRE" acotado a: Alerta → Issue → humano+agente 
   y `DRY_RUN=false`; queda fuera de la verificación mecánica local.
 
 ## Next step
-- Feature cerrada a nivel de código y verificación. Falta solo lo que decide el
-  usuario: push de la rama y PR (`feat/alert-to-github-issue` → `main`).
-- Presupuesto de entrega: ~648 líneas authored (85 + 336 + 227), supera el umbral
-  de ~400 → al hacer el PR hay que elegir estrategia de cadena
-  (`stacked-to-main` o `feature-branch-chain`) o confirmar un PR único.
+- Feature cerrada a nivel de código, verificación y entrega.
+- **PR único #7**: https://github.com/educode7/BackendFintech/pull/7
+  (`feat/alert-to-github-issue` → `main`, 11 archivos, +670/-0). Decisión del
+  usuario: PR único (no cadena).
+- Pendiente del usuario: prueba end-to-end real contra la API de GitHub
+  (`GITHUB_TOKEN` + `DRY_RUN=false`) y el merge del PR.
 
 ## Delivery forecast
 - Estimado inicial: ~6-7 archivos, < 400 líneas, single PR.
-- Real: 648 líneas authored (85 + 336 + 227) + 25 líneas de docs de cierre → supera
-  el umbral de ~400.
-- delivery_strategy: ask-on-risk (default) → **disparado**: hay que preguntar una
-  vez por la estrategia de cadena antes de abrir el PR.
+- Real: 678 líneas authored (85 + 336 + 227 + 30 de docs de cierre) → supera el
+  umbral de ~400.
+- delivery_strategy: ask-on-risk (default) → disparado y respondido por el usuario:
+  **PR único** (sin cadena). PR #7, 11 archivos, +670/-0.
