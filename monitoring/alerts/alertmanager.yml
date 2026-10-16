@@ -1,0 +1,15 @@
+route:
+  receiver: issue-webhook
+  group_by: [alertname, job]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: issue-webhook
+    webhook_configs:
+      - url: http://alert-webhook:9095/webhook
+        http_config:
+          authorization:
+            type: Bearer
+            credentials_file: /etc/alertmanager/webhook_secret

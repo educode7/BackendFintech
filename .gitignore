@@ -33,3 +33,7 @@ Thumbs.db
 *.log
 logs/
 tmp/
+
+## Secrets (never commit)
+.env
+monitoring/alerts/webhook_secret.txt

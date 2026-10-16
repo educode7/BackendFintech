@@ -3,6 +3,16 @@ global:
   evaluation_interval: 15s
   scrape_timeout: 10s
 
+rule_files:
+  # Only rule files: alertmanager.yml also lives in this folder and must not
+  # be parsed as Prometheus rules (it would crash Prometheus at startup).
+  - /etc/prometheus/alerts/*-rules.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
 scrape_configs:
   - job_name: prometheus
     static_configs:
