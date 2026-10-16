@@ -41,7 +41,7 @@ caso de uso "Claude Code for SRE" acotado a: Alerta → Issue → humano+agente 
 - [x] T6: Runbook `monitoring/alerts/README.md` (setup + prueba con curl)
 - [x] T7: Verificación: `promtool check rules`, `docker compose config`, dry-run
       curl con payload de ejemplo
-- [ ] T8: Work-unit commit(s) Conventional Commits
+- [x] T8: Work-unit commit(s) Conventional Commits
 
 ## Acceptance criteria
 - `promtool check rules` pasa con las reglas nuevas.
@@ -53,8 +53,7 @@ caso de uso "Claude Code for SRE" acotado a: Alerta → Issue → humano+agente 
 - Commits (rama `feat/alert-to-github-issue`, base `1253cb8`):
   - `54fe0a6` feat(monitoring): add prometheus alert rules and alertmanager routing — T2 + T3 (reglas + ruteo)
   - `1cdc679` feat(alert-webhook): turn alertmanager alerts into github issues — T4 + T5 + wiring de deploy (compose, env, gitignore)
-  - C3 docs(alerts): runbook + este feature doc — T6 + T8 (hash registrado en el commit de cierre)
-- T2–T6: artefactos escritos en el working tree (rama sin commits propios todavía).
+  - `e455d1f` docs(alerts): runbook + este feature doc — T6 + T8 (C3)
 - T7 (verificación ejecutada el 2026-10-15):
   - `docker compose config --quiet` → OK; `--services` lista `prometheus`,
     `alertmanager`, `alert-webhook`.
@@ -70,16 +69,35 @@ caso de uso "Claude Code for SRE" acotado a: Alerta → Issue → humano+agente 
       `{"dry_run":true,"actions":["DRY_RUN close attempt: no open issue found ... (marker <!-- alert:abc123def456 -->)"]}`
     - `POST /webhook` JSON malformado → 400 `malformed JSON`
     - `POST /webhook` sin `alerts[]` → 400 `payload missing alerts[] array`
+- Verificación independiente (subagente `gentle-ai-verify`, 2026-10-15) sobre
+  `1253cb8..e455d1f` en copia scratch: verdict **pass**, sin blockers. Re-ejecutó
+  AC1–AC4 (promtool rules/config, amtool check-config, `docker compose config`,
+  los 7 casos curl del receiver, fail-closed con `WEBHOOK_SECRET` vacío, grep de
+  secretos en los 3 commits, y `server.js` sin child_process/LLM). Extras:
+  `DRY_RUN=false` + token vacío sigue en dry-run; `alerts:[]` → 200 `actions:[]`;
+  `docker compose config` pasa de 19 a 21 servicios (superset estricto).
+  Advisories (todas pre-existentes o de entorno, ninguna defecto del cambio):
+  1. el bind-mount `webhook_secret.txt` se crea como **directorio** si no existe
+     el archivo antes de `compose up` → Alertmanager falla al leer
+     `credentials_file`; 2. el dir `monitoring/alerts/` montado en Prometheus
+     expone el secreto dentro de ese contenedor (read-only, mismo host, no es
+     fuga al repo); 3. `webhook_secret.txt.example` dice `change-me` en vez de
+     vacío; 4. el checklist marcaba T8 sin cerrar (ya corregido).
 - Riesgo: item 2 (guard Bearer + manejo de secretos/PAT) e item 5 (superficie de
   despliegue en `docker-compose.yml`). Prueba real contra la API de GitHub
   (crear/comentar/cerrar issue) no ejecutada: requiere `GITHUB_TOKEN` del usuario
   y `DRY_RUN=false`; queda fuera de la verificación mecánica local.
 
 ## Next step
-- T8: work-unit commits (el receiver + `.env`/secretos va en su propio commit por
-  ser la unidad de riesgo alto).
+- Feature cerrada a nivel de código y verificación. Falta solo lo que decide el
+  usuario: push de la rama y PR (`feat/alert-to-github-issue` → `main`).
+- Presupuesto de entrega: ~648 líneas authored (85 + 336 + 227), supera el umbral
+  de ~400 → al hacer el PR hay que elegir estrategia de cadena
+  (`stacked-to-main` o `feature-branch-chain`) o confirmar un PR único.
 
 ## Delivery forecast
-- ~6-7 archivos nuevos/tocados, estimado < 400 líneas → `ask-on-risk` probablemente
-  no se activa; estrategia: single PR al final (pendiente de decisión si excede).
-- delivery_strategy: ask-on-risk (default), chain_strategy: n/a por ahora.
+- Estimado inicial: ~6-7 archivos, < 400 líneas, single PR.
+- Real: 648 líneas authored (85 + 336 + 227) + 25 líneas de docs de cierre → supera
+  el umbral de ~400.
+- delivery_strategy: ask-on-risk (default) → **disparado**: hay que preguntar una
+  vez por la estrategia de cadena antes de abrir el PR.

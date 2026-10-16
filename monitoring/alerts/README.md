@@ -37,6 +37,10 @@ qué agente usa después.
    (Existe `webhook_secret.txt.example` como plantilla; el archivo real está en
    `.gitignore` y **nunca** se commitea.)
 
+   > Crealo **antes** de `docker compose up`: Docker crea un *directorio* vacío
+   > cuando el origen de un bind-mount de un solo archivo no existe, y
+   > Alertmanager falla al no poder leer `credentials_file`.
+
 3. **Modo seguro primero** — déjalo en `DRY_RUN=true` en `.env`: el receiver no
    llama a GitHub, solo imprime la acción que haría. Cuando verifiques el flujo
    real, cambia a `DRY_RUN=false`.
