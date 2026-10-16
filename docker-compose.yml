@@ -389,6 +389,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts:/etc/prometheus/alerts:ro
       - prometheus-data:/prometheus
     networks:
       - wallet-net
@@ -436,6 +437,41 @@ services:
       - wallet-net
     restart: unless-stopped
 
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: wallet-alertmanager
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alerts/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./monitoring/alerts/webhook_secret.txt:/etc/alertmanager/webhook_secret:ro
+      - alertmanager-data:/alertmanager
+    networks:
+      - wallet-net
+    restart: unless-stopped
+
+  alert-webhook:
+    image: node:20-alpine
+    container_name: wallet-alert-webhook
+    working_dir: /app
+    command: node server.js
+    environment:
+      PORT: "9095"
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_REPO: ${GITHUB_REPO:-educode7/BackendFintech}
+      DRY_RUN: ${DRY_RUN:-true}
+    ports:
+      - "9095:9095"
+    volumes:
+      - ./monitoring/alert-webhook:/app:ro
+    networks:
+      - wallet-net
+    restart: unless-stopped
+
 networks:
   wallet-net:
     driver: bridge
@@ -448,3 +484,4 @@ volumes:
   grafana-data:
   loki-data:
   tempo-data:
+  alertmanager-data:
